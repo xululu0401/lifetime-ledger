@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>长期卡对账台 · 终身卡、年卡、储值卡到底值不值</title>
+<meta name="description" content="一次付清的终身卡、多年卡、储值卡值不值？把「大概多久去一次、会不会越去越少、店会不会先没了、钱的时间价值」摊成逐年一本账，给出两种付法的现值对照、盈亏平衡频率、回本时点与「会越去越少时这张卡值多少」。全部自己填，页面不联网。">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#161b22; --ink2:#4a5568; --ink3:#7b8794;
+    --line:#e3e6eb; --line2:#cbd2da; --brand:#0f5fa6; --brand2:#eaf2fa;
+    --good:#0f7b52; --goodbg:#e8f6ef; --warn:#9a5b00; --warnbg:#fff5e5; --bad:#b42318; --badbg:#fdeceb;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .app{max-width:1320px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:400px minmax(0,1fr);gap:18px;align-items:start}
+  .app > *{min-width:0}
+  header.top{grid-column:1/-1;padding:4px 2px 0}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);max-width:920px}
+  .badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h3{margin:16px 0 8px;font-size:14px;color:var(--ink2)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--brand2);color:var(--brand);border:1px solid #d3e3f5}
+  .tag.gray{background:#f1f3f6;color:var(--ink2);border-color:var(--line2)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-size:14px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #bcd8f0;border-color:var(--brand)}
+  input.bad{border-color:var(--bad);background:var(--badbg)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{font-size:12px;padding:5px 9px;border-radius:999px}
+  .seg button.on{background:var(--brand2);border-color:#bcd8f0;color:var(--brand);font-weight:600}
+  .chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)}
+  .chk input{margin:0}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:#f7f9fb}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  button.primary:hover{background:#0d4f8a}
+  button.tiny{font-size:12px;padding:4px 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .footnote{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--ink2);font-weight:600;background:#fafbfc;font-size:12px}
+  th:first-child,td:first-child{text-align:left;white-space:normal;word-break:keep-all}
+  tbody tr.pick{cursor:pointer}
+  tbody tr.pick:hover{background:#f7f9fb}
+  tbody tr.sel{background:var(--brand2)}
+  tbody tr.sel td{border-bottom-color:#bcd8f0}
+  tr.sum td{font-weight:700;background:#fafbfc}
+  .tw{overflow-x:auto;max-width:100%}
+  /* 宽表第一列是名称，长名称必须能折行，否则一列就把整张表撑到看不见其余列 */
+  #cardTable th:first-child,#cardTable td:first-child,
+  #sensTable th:first-child,#sensTable td:first-child{word-break:break-word;overflow-wrap:anywhere}
+  /* 卡清单的列宽：中文名不能被挤成竖排（缩到 150px 时「健身年卡」会一字一行），
+     五个数字列固定宽度，让「判定」列在 1280px 桌面也能落在视口内 */
+  #cardTable{table-layout:fixed;min-width:880px}
+  #cardTable th:first-child,#cardTable td:first-child{width:132px;word-break:keep-all}
+  #cardTable th:nth-child(2),#cardTable td:nth-child(2){width:74px}
+  #cardTable th:nth-child(3),#cardTable td:nth-child(3),
+  #cardTable th:nth-child(4),#cardTable td:nth-child(4){width:84px}
+  #cardTable th:nth-child(5),#cardTable td:nth-child(5),
+  #cardTable th:nth-child(6),#cardTable td:nth-child(6){width:70px}
+  #cardTable th:nth-child(7),#cardTable td:nth-child(7),
+  #cardTable th:nth-child(8),#cardTable td:nth-child(8),
+  #cardTable th:nth-child(9),#cardTable td:nth-child(9){width:96px}
+  #cardTable th:nth-child(10),#cardTable td:nth-child(10){width:88px}
+  #cardTable th:nth-child(11),#cardTable td:nth-child(11){width:74px}
+  table.wrap th,table.wrap td{white-space:normal;word-break:keep-all}
+  table.wrap{table-layout:fixed}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+  .kpi{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+  .kpi .k{font-size:12px;color:var(--ink2);margin-bottom:2px}
+  .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.2px;word-break:keep-all}
+  .kpi .s{font-size:11px;color:var(--ink3);overflow-wrap:anywhere}
+  .concl{background:var(--brand2);border:1px solid #d3e3f5;border-radius:10px;padding:12px 14px;font-size:15px;line-height:1.7}
+  .metric{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+  .metric .mk{font-size:12px;color:var(--ink2)}
+  .metric .mv{font-size:18px;font-weight:700;word-break:keep-all}
+  .metric .ms{font-size:11px;color:var(--ink3);word-break:keep-all}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px;margin-top:4px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .pill.ok{background:var(--goodbg);color:var(--good)}
+  .pill.tight{background:var(--warnbg);color:var(--warn)}
+  .pill.fail{background:var(--badbg);color:var(--bad)}
+  .vd{color:var(--good)} .vt{color:var(--warn)} .vf{color:var(--bad)}
+  .bar{height:8px;border-radius:6px;background:#eef1f5;overflow:hidden;min-width:52px}
+  .bar > i{display:block;height:100%;border-radius:6px}
+  ul.tight{margin:4px 0 0;padding-left:20px}
+  ul.tight li{margin:5px 0;line-height:1.6}
+  ol.tight{margin:4px 0 0;padding-left:20px}
+  ol.tight li{margin:5px 0;line-height:1.6}
+  .item{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#fcfdfe}
+  .itemhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .itemhead input.nm{flex:1 1 120px;min-width:0;font-weight:600}
+  .itemhead select{flex:0 1 150px;min-width:0;font-size:12.5px}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:8px}
+  .grid4 label{display:block;font-size:11.5px;color:var(--ink3);line-height:1.4}
+  .grid4 input{width:100%;padding:6px 8px;font-size:13px}
+  .warnbox{background:var(--warnbg);border:1px solid #f2d9ad;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#6b3f00}
+  .errbox{background:var(--badbg);border:1px solid #f3c6c2;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#7a1a12}
+  .okbox{background:var(--goodbg);border:1px solid #bfe4d1;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#0b5c3e}
+  .slices{display:grid;grid-template-columns:1fr;gap:8px}
+  .slice{font-size:12.8px;color:var(--ink2);border-left:3px solid var(--line2);padding-left:9px}
+  .slice b{color:var(--ink)}
+  .slice .st{display:block;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .muted{color:var(--ink3)}
+  .sticky{position:sticky;top:14px;max-height:calc(100vh - 24px);overflow-y:auto}
+  .hidden{display:none !important}
+  @media (max-width:1000px){
+    .app{grid-template-columns:minmax(0,1fr)}
+    .sticky{position:static;max-height:none;overflow:visible}
+    table{font-size:12.5px}
+    th,td{padding:6px 7px}
+  }
+  @media (max-width:620px){
+    .app{padding:16px 12px 48px}
+    h1{font-size:22px}
+    .kpi .v{font-size:18px}
+    .grid4{grid-template-columns:repeat(auto-fit,minmax(78px,1fr))}
+    /* 宽表在窄屏下改为定宽 + 容器内横向滚动：列宽稳定，长名称折行而不是独占整行 */
+    #cardTable{width:880px}
+    #cardTable th:first-child,#cardTable td:first-child{width:150px}
+    #sensTable{table-layout:fixed;width:820px}
+    #sensTable th:first-child,#sensTable td:first-child{width:196px}
+  }
+  .scrollhint{display:none}
+  @media (max-width:1000px){ .scrollhint{display:inline} }
+  input[type=file]{max-width:100%;min-width:0}
+  .btns > *{min-width:0}
+  @media (max-width:420px){
+    .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    input[type=file]{width:120px;font-size:11px}
+    .row2{grid-template-columns:minmax(0,1fr)}
+    .btns{gap:6px}
+    .btns button{font-size:12px;padding:7px 9px}
+    .seg button{font-size:11.5px;padding:5px 7px}
+    .itemhead select{flex:1 1 100%}
+  }
+  @media print{
+    body{background:#fff}
+    .sticky{position:static;max-height:none;overflow:visible}
+    .app{grid-template-columns:minmax(0,1fr);max-width:none}
+    .no-print{display:none !important}
+    .card{break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>长期卡对账台</h1>
+    <p class="lede">「终身卡 / 年卡 / 储值卡」这类一次付清、之后每次不再单独掏钱的卡，值不值不是算一次「总价 ÷ 单次价」就完了。<b>你会越去越少、店可能会先没了、先掏出去的钱本来能生息</b>——这三件事都会改变答案。本页把它们摊成逐年一本账：两种付法（全程按次付 vs 买卡）的现值对照、盈亏平衡频率、回本时点，以及「按你这组假设，这张卡实际值多少」。</p>
+    <div class="badges">
+      <span class="badge">逐年存活 × 到访衰减 × 折现，三种口径都给</span>
+      <span class="badge">默认 8 张卡都是虚构示例</span>
+      <span class="badge">不联网 · 不查任何商家 · 不给消费建议</span>
+    </div>
+  </header>
+
+  <div class="sticky">
+    <form id="form" onsubmit="return false">
+      <div class="card">
+        <h2>卡本身 <span class="tag">你现在要判断的这张</span></h2>
+        <div class="field">
+          <label>卡的类型 <span class="sub">决定后面要填哪些项</span></label>
+          <select id="payType"></select>
+          <p class="footnote" id="payTypeHint"></p>
+        </div>
+        <div class="row2">
+          <div class="field"><label>一次实付（元）</label><input type="text" id="cardPrice"></div>
+          <div class="field cond" id="wrapFace"><label>到手面值（元）<span class="sub">含赠送</span></label><input type="text" id="cardFace"></div>
+          <div class="field cond" id="wrapYears"><label>卡面年限（年）</label><input type="text" id="cardYears"></div>
+        </div>
+        <p class="footnote" id="priceHint"></p>
+      </div>
+
+      <div class="card">
+        <h2>你大概会怎么用 <span class="tag gray">全是假设，由你填</span></h2>
+        <div class="row2">
+          <div class="field"><label>第 1 年每月去几次</label><input type="text" id="visitsPerMonth"></div>
+          <div class="field"><label>不用卡时单次价（元）</label><input type="text" id="perUsePrice"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>年到访衰减率（%）<span class="sub">今年比去年少去多少</span></label><input type="text" id="decayPerYear"></div>
+          <div class="field"><label>向前看几年</label><input type="text" id="horizonYears"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>店 / 商家年消失概率（%）</label><input type="text" id="failurePerYear"></div>
+          <div class="field"><label>年折现率（%）<span class="sub">钱的时间价值</span></label><input type="text" id="discountRate"></div>
+        </div>
+        <p class="footnote">这五个数<b>全是假设，不是事实</b>：本页不联网、不查任何行业倒闭率、不预测任何具体商家的经营状况。「年到访衰减率」说的是<b>同一个你</b>越去越少（新鲜感、搬家、换工作），不是统计出来的规律。</p>
+      </div>
+
+      <div class="card">
+        <h2>场景</h2>
+        <div class="field"><label>一键换上（会覆盖当前输入）</label><select id="scenario"></select></div>
+        <p class="footnote">场景只改数字。默认、8 个内置场景与页面上所有数字<b>都是虚构示例</b>，不是任何真实商家或用户的实测数据。</p>
+      </div>
+
+      <div class="card no-print">
+        <h2>保存与导出</h2>
+        <div class="btns">
+          <button type="button" class="primary" id="btnSave">保存到本机</button>
+          <button type="button" id="btnLoad">读取本机</button>
+          <button type="button" id="btnReset">恢复默认示例</button>
+        </div>
+        <div class="btns">
+          <button type="button" id="btnCsv">导出 CSV</button>
+          <button type="button" id="btnMd">导出 Markdown</button>
+          <button type="button" id="btnJson">导出 JSON 备份</button>
+          <button type="button" id="btnPng">导出结果卡 PNG</button>
+        </div>
+        <div class="btns">
+          <label class="chk" style="font-size:13px"><span>导入备份</span><input type="file" id="importFile" accept=".json,application/json"></label>
+          <button type="button" id="btnPrint">打印视图</button>
+        </div>
+        <p class="footnote" id="saveState">改动会即时重算；「保存到本机」用的是浏览器本地存储（只在这台机器上）。</p>
+      </div>
+    </form>
+  </div>
+
+  <main>
+    <div class="card">
+      <h2>结论 <span class="tag gray" id="verdictTag"></span></h2>
+      <div id="errors"></div>
+      <div class="concl" id="headline"></div>
+      <div class="kpis" id="kpis" style="margin-top:12px"></div>
+      <div id="warnBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>两种付法对账 <span class="tag gray">结论就是从这张表来的</span></h2>
+      <div id="compare"></div>
+    </div>
+
+    <div class="card">
+      <h2>逐年一本账 <span class="tag gray">存活 × 到访衰减 × 折现</span></h2>
+      <div class="tw">
+        <table id="yearTable">
+          <thead><tr>
+            <th>第几年</th><th>店还开着</th><th>这一年去几次</th><th>期望到访</th>
+            <th>当年折扣</th><th>累计折扣</th><th>累计现值</th><th>累计净值</th><th>余额</th>
+          </tr></thead>
+          <tbody id="yearBody"></tbody>
+        </table>
+      </div>
+      <p class="footnote">「期望到访」= 当年到访次数 × 店还开着的概率；「当年折扣」= 期望到访 × 单次价（储值卡封顶到余额）。<b>累计净值</b>是「累计折扣 − 一次实付」，只是不折现的粗口径，结论请看上面的两种付法对账。 <span class="scrollhint">窄屏下这张表可以左右滑动看完整列。</span></p>
+    </div>
+
+    <div class="card">
+      <h2>同一份设置换口径 <span class="tag gray">每个数都能在下面复核</span></h2>
+      <div id="laws"></div>
+    </div>
+
+    <div class="card">
+      <h2>值得记住的几条 <span class="tag gray">都能在表和口径里复核</span></h2>
+      <div class="slices" id="insights"></div>
+    </div>
+
+    <div class="card">
+      <h2>卡清单对照 <span class="tag gray">点任意一行看详解</span></h2>
+      <div class="tw">
+        <table id="cardTable">
+          <thead><tr>
+            <th>卡</th><th>类型</th><th>实付</th><th>面值</th><th>每月次数</th><th>单次价</th>
+            <th>按次付现值</th><th>买卡现值</th><th>省下现值</th><th>平衡频率</th><th>判定</th>
+          </tr></thead>
+          <tbody id="cardBody"></tbody>
+        </table>
+      </div>
+      <p class="footnote">这一栏是<b>同一次 analyze() 的结果</b>，与上方主卡用的是同一套公式；每张卡各自带自己的假设。 <span class="scrollhint">窄屏下这张表可以左右滑动看完整列。</span></p>
+    </div>
+
+    <div class="card">
+      <h2>选中卡的详解 <span class="tag" id="detailName"></span></h2>
+      <div id="detailBody"></div>
+    </div>
+
+    <div class="card">
+      <h2>敏感性 <span class="tag gray" id="sensOf"></span></h2>
+      <div class="tw"><table id="sensTable">
+        <thead><tr><th>改动</th><th>累计折扣</th><th>按次付现值</th><th>买卡现值</th><th>省下现值</th><th>变化</th><th>平衡频率</th><th>判定</th></tr></thead>
+        <tbody id="sensBody"></tbody>
+      </table></div>
+      <p class="footnote">每一行都是<b>完整重算</b>过的，不是按比例估算。 <span class="scrollhint">窄屏下这张表可以左右滑动看完整列。</span></p>
+    </div>
+
+    <div class="card">
+      <h2>下一步</h2>
+      <ol class="tight" id="steps"></ol>
+    </div>
+
+    <div class="card">
+      <h2>这份账不算什么</h2>
+      <ul class="tight" id="limits"></ul>
+    </div>
+
+    <div class="card">
+      <h2>结构自检 <span class="tag gray" id="checkTag"></span></h2>
+      <ul class="tight" id="checks"></ul>
+      <p class="footnote">这些是每次重算都会跑的一致性与恒等式检查：两种付法之差 = 按次付现值 − 买卡现值、买卡现值 = 卡价 + 自付现值、名义支出 = 面值抵扣 + 自付、折现率归零时两口径相等、盈亏平衡频率回代命中卡价、衰减/消失/折现各自的单调方向、储值卡的折扣不超过「面值 × 折扣率」、结果里没有 NaN。它们是<b>本页内部一致性</b>的证据，不等于这些假设对现实成立。</p>
+    </div>
+  </main>
+</div>
+<script>/*CORE*/</script>
+<script>/*UI*/</script>
+</body>
+</html>

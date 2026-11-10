@@ -1,0 +1,2286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>长期卡对账台 · 终身卡、年卡、储值卡到底值不值</title>
+<meta name="description" content="一次付清的终身卡、多年卡、储值卡值不值？把「大概多久去一次、会不会越去越少、店会不会先没了、钱的时间价值」摊成逐年一本账，给出两种付法的现值对照、盈亏平衡频率、回本时点与「会越去越少时这张卡值多少」。全部自己填，页面不联网。">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#161b22; --ink2:#4a5568; --ink3:#7b8794;
+    --line:#e3e6eb; --line2:#cbd2da; --brand:#0f5fa6; --brand2:#eaf2fa;
+    --good:#0f7b52; --goodbg:#e8f6ef; --warn:#9a5b00; --warnbg:#fff5e5; --bad:#b42318; --badbg:#fdeceb;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .app{max-width:1320px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:400px minmax(0,1fr);gap:18px;align-items:start}
+  .app > *{min-width:0}
+  header.top{grid-column:1/-1;padding:4px 2px 0}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);max-width:920px}
+  .badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h3{margin:16px 0 8px;font-size:14px;color:var(--ink2)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--brand2);color:var(--brand);border:1px solid #d3e3f5}
+  .tag.gray{background:#f1f3f6;color:var(--ink2);border-color:var(--line2)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-size:14px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #bcd8f0;border-color:var(--brand)}
+  input.bad{border-color:var(--bad);background:var(--badbg)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{font-size:12px;padding:5px 9px;border-radius:999px}
+  .seg button.on{background:var(--brand2);border-color:#bcd8f0;color:var(--brand);font-weight:600}
+  .chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)}
+  .chk input{margin:0}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:#f7f9fb}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  button.primary:hover{background:#0d4f8a}
+  button.tiny{font-size:12px;padding:4px 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .footnote{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--ink2);font-weight:600;background:#fafbfc;font-size:12px}
+  th:first-child,td:first-child{text-align:left;white-space:normal;word-break:keep-all}
+  tbody tr.pick{cursor:pointer}
+  tbody tr.pick:hover{background:#f7f9fb}
+  tbody tr.sel{background:var(--brand2)}
+  tbody tr.sel td{border-bottom-color:#bcd8f0}
+  tr.sum td{font-weight:700;background:#fafbfc}
+  .tw{overflow-x:auto;max-width:100%}
+  /* 宽表第一列是名称，长名称必须能折行，否则一列就把整张表撑到看不见其余列 */
+  #cardTable th:first-child,#cardTable td:first-child,
+  #sensTable th:first-child,#sensTable td:first-child{word-break:break-word;overflow-wrap:anywhere}
+  /* 卡清单的列宽：中文名不能被挤成竖排（缩到 150px 时「健身年卡」会一字一行），
+     五个数字列固定宽度，让「判定」列在 1280px 桌面也能落在视口内 */
+  #cardTable{table-layout:fixed;min-width:880px}
+  #cardTable th:first-child,#cardTable td:first-child{width:132px;word-break:keep-all}
+  #cardTable th:nth-child(2),#cardTable td:nth-child(2){width:74px}
+  #cardTable th:nth-child(3),#cardTable td:nth-child(3),
+  #cardTable th:nth-child(4),#cardTable td:nth-child(4){width:84px}
+  #cardTable th:nth-child(5),#cardTable td:nth-child(5),
+  #cardTable th:nth-child(6),#cardTable td:nth-child(6){width:70px}
+  #cardTable th:nth-child(7),#cardTable td:nth-child(7),
+  #cardTable th:nth-child(8),#cardTable td:nth-child(8),
+  #cardTable th:nth-child(9),#cardTable td:nth-child(9){width:96px}
+  #cardTable th:nth-child(10),#cardTable td:nth-child(10){width:88px}
+  #cardTable th:nth-child(11),#cardTable td:nth-child(11){width:74px}
+  table.wrap th,table.wrap td{white-space:normal;word-break:keep-all}
+  table.wrap{table-layout:fixed}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+  .kpi{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+  .kpi .k{font-size:12px;color:var(--ink2);margin-bottom:2px}
+  .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.2px;word-break:keep-all}
+  .kpi .s{font-size:11px;color:var(--ink3);overflow-wrap:anywhere}
+  .concl{background:var(--brand2);border:1px solid #d3e3f5;border-radius:10px;padding:12px 14px;font-size:15px;line-height:1.7}
+  .metric{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+  .metric .mk{font-size:12px;color:var(--ink2)}
+  .metric .mv{font-size:18px;font-weight:700;word-break:keep-all}
+  .metric .ms{font-size:11px;color:var(--ink3);word-break:keep-all}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px;margin-top:4px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .pill.ok{background:var(--goodbg);color:var(--good)}
+  .pill.tight{background:var(--warnbg);color:var(--warn)}
+  .pill.fail{background:var(--badbg);color:var(--bad)}
+  .vd{color:var(--good)} .vt{color:var(--warn)} .vf{color:var(--bad)}
+  .bar{height:8px;border-radius:6px;background:#eef1f5;overflow:hidden;min-width:52px}
+  .bar > i{display:block;height:100%;border-radius:6px}
+  ul.tight{margin:4px 0 0;padding-left:20px}
+  ul.tight li{margin:5px 0;line-height:1.6}
+  ol.tight{margin:4px 0 0;padding-left:20px}
+  ol.tight li{margin:5px 0;line-height:1.6}
+  .item{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#fcfdfe}
+  .itemhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .itemhead input.nm{flex:1 1 120px;min-width:0;font-weight:600}
+  .itemhead select{flex:0 1 150px;min-width:0;font-size:12.5px}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:8px}
+  .grid4 label{display:block;font-size:11.5px;color:var(--ink3);line-height:1.4}
+  .grid4 input{width:100%;padding:6px 8px;font-size:13px}
+  .warnbox{background:var(--warnbg);border:1px solid #f2d9ad;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#6b3f00}
+  .errbox{background:var(--badbg);border:1px solid #f3c6c2;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#7a1a12}
+  .okbox{background:var(--goodbg);border:1px solid #bfe4d1;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#0b5c3e}
+  .slices{display:grid;grid-template-columns:1fr;gap:8px}
+  .slice{font-size:12.8px;color:var(--ink2);border-left:3px solid var(--line2);padding-left:9px}
+  .slice b{color:var(--ink)}
+  .slice .st{display:block;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .muted{color:var(--ink3)}
+  .sticky{position:sticky;top:14px;max-height:calc(100vh - 24px);overflow-y:auto}
+  .hidden{display:none !important}
+  @media (max-width:1000px){
+    .app{grid-template-columns:minmax(0,1fr)}
+    .sticky{position:static;max-height:none;overflow:visible}
+    table{font-size:12.5px}
+    th,td{padding:6px 7px}
+  }
+  @media (max-width:620px){
+    .app{padding:16px 12px 48px}
+    h1{font-size:22px}
+    .kpi .v{font-size:18px}
+    .grid4{grid-template-columns:repeat(auto-fit,minmax(78px,1fr))}
+    /* 宽表在窄屏下改为定宽 + 容器内横向滚动：列宽稳定，长名称折行而不是独占整行 */
+    #cardTable{width:880px}
+    #cardTable th:first-child,#cardTable td:first-child{width:150px}
+    #sensTable{table-layout:fixed;width:820px}
+    #sensTable th:first-child,#sensTable td:first-child{width:196px}
+  }
+  .scrollhint{display:none}
+  @media (max-width:1000px){ .scrollhint{display:inline} }
+  input[type=file]{max-width:100%;min-width:0}
+  .btns > *{min-width:0}
+  @media (max-width:420px){
+    .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    input[type=file]{width:120px;font-size:11px}
+    .row2{grid-template-columns:minmax(0,1fr)}
+    .btns{gap:6px}
+    .btns button{font-size:12px;padding:7px 9px}
+    .seg button{font-size:11.5px;padding:5px 7px}
+    .itemhead select{flex:1 1 100%}
+  }
+  @media print{
+    body{background:#fff}
+    .sticky{position:static;max-height:none;overflow:visible}
+    .app{grid-template-columns:minmax(0,1fr);max-width:none}
+    .no-print{display:none !important}
+    .card{break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>长期卡对账台</h1>
+    <p class="lede">「终身卡 / 年卡 / 储值卡」这类一次付清、之后每次不再单独掏钱的卡，值不值不是算一次「总价 ÷ 单次价」就完了。<b>你会越去越少、店可能会先没了、先掏出去的钱本来能生息</b>——这三件事都会改变答案。本页把它们摊成逐年一本账：两种付法（全程按次付 vs 买卡）的现值对照、盈亏平衡频率、回本时点，以及「按你这组假设，这张卡实际值多少」。</p>
+    <div class="badges">
+      <span class="badge">逐年存活 × 到访衰减 × 折现，三种口径都给</span>
+      <span class="badge">默认 8 张卡都是虚构示例</span>
+      <span class="badge">不联网 · 不查任何商家 · 不给消费建议</span>
+    </div>
+  </header>
+
+  <div class="sticky">
+    <form id="form" onsubmit="return false">
+      <div class="card">
+        <h2>卡本身 <span class="tag">你现在要判断的这张</span></h2>
+        <div class="field">
+          <label>卡的类型 <span class="sub">决定后面要填哪些项</span></label>
+          <select id="payType"></select>
+          <p class="footnote" id="payTypeHint"></p>
+        </div>
+        <div class="row2">
+          <div class="field"><label>一次实付（元）</label><input type="text" id="cardPrice"></div>
+          <div class="field cond" id="wrapFace"><label>到手面值（元）<span class="sub">含赠送</span></label><input type="text" id="cardFace"></div>
+          <div class="field cond" id="wrapYears"><label>卡面年限（年）</label><input type="text" id="cardYears"></div>
+        </div>
+        <p class="footnote" id="priceHint"></p>
+      </div>
+
+      <div class="card">
+        <h2>你大概会怎么用 <span class="tag gray">全是假设，由你填</span></h2>
+        <div class="row2">
+          <div class="field"><label>第 1 年每月去几次</label><input type="text" id="visitsPerMonth"></div>
+          <div class="field"><label>不用卡时单次价（元）</label><input type="text" id="perUsePrice"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>年到访衰减率（%）<span class="sub">今年比去年少去多少</span></label><input type="text" id="decayPerYear"></div>
+          <div class="field"><label>向前看几年</label><input type="text" id="horizonYears"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>店 / 商家年消失概率（%）</label><input type="text" id="failurePerYear"></div>
+          <div class="field"><label>年折现率（%）<span class="sub">钱的时间价值</span></label><input type="text" id="discountRate"></div>
+        </div>
+        <p class="footnote">这五个数<b>全是假设，不是事实</b>：本页不联网、不查任何行业倒闭率、不预测任何具体商家的经营状况。「年到访衰减率」说的是<b>同一个你</b>越去越少（新鲜感、搬家、换工作），不是统计出来的规律。</p>
+      </div>
+
+      <div class="card">
+        <h2>场景</h2>
+        <div class="field"><label>一键换上（会覆盖当前输入）</label><select id="scenario"></select></div>
+        <p class="footnote">场景只改数字。默认、8 个内置场景与页面上所有数字<b>都是虚构示例</b>，不是任何真实商家或用户的实测数据。</p>
+      </div>
+
+      <div class="card no-print">
+        <h2>保存与导出</h2>
+        <div class="btns">
+          <button type="button" class="primary" id="btnSave">保存到本机</button>
+          <button type="button" id="btnLoad">读取本机</button>
+          <button type="button" id="btnReset">恢复默认示例</button>
+        </div>
+        <div class="btns">
+          <button type="button" id="btnCsv">导出 CSV</button>
+          <button type="button" id="btnMd">导出 Markdown</button>
+          <button type="button" id="btnJson">导出 JSON 备份</button>
+          <button type="button" id="btnPng">导出结果卡 PNG</button>
+        </div>
+        <div class="btns">
+          <label class="chk" style="font-size:13px"><span>导入备份</span><input type="file" id="importFile" accept=".json,application/json"></label>
+          <button type="button" id="btnPrint">打印视图</button>
+        </div>
+        <p class="footnote" id="saveState">改动会即时重算；「保存到本机」用的是浏览器本地存储（只在这台机器上）。</p>
+      </div>
+    </form>
+  </div>
+
+  <main>
+    <div class="card">
+      <h2>结论 <span class="tag gray" id="verdictTag"></span></h2>
+      <div id="errors"></div>
+      <div class="concl" id="headline"></div>
+      <div class="kpis" id="kpis" style="margin-top:12px"></div>
+      <div id="warnBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>两种付法对账 <span class="tag gray">结论就是从这张表来的</span></h2>
+      <div id="compare"></div>
+    </div>
+
+    <div class="card">
+      <h2>逐年一本账 <span class="tag gray">存活 × 到访衰减 × 折现</span></h2>
+      <div class="tw">
+        <table id="yearTable">
+          <thead><tr>
+            <th>第几年</th><th>店还开着</th><th>这一年去几次</th><th>期望到访</th>
+            <th>当年折扣</th><th>累计折扣</th><th>累计现值</th><th>累计净值</th><th>余额</th>
+          </tr></thead>
+          <tbody id="yearBody"></tbody>
+        </table>
+      </div>
+      <p class="footnote">「期望到访」= 当年到访次数 × 店还开着的概率；「当年折扣」= 期望到访 × 单次价（储值卡封顶到余额）。<b>累计净值</b>是「累计折扣 − 一次实付」，只是不折现的粗口径，结论请看上面的两种付法对账。 <span class="scrollhint">窄屏下这张表可以左右滑动看完整列。</span></p>
+    </div>
+
+    <div class="card">
+      <h2>同一份设置换口径 <span class="tag gray">每个数都能在下面复核</span></h2>
+      <div id="laws"></div>
+    </div>
+
+    <div class="card">
+      <h2>值得记住的几条 <span class="tag gray">都能在表和口径里复核</span></h2>
+      <div class="slices" id="insights"></div>
+    </div>
+
+    <div class="card">
+      <h2>卡清单对照 <span class="tag gray">点任意一行看详解</span></h2>
+      <div class="tw">
+        <table id="cardTable">
+          <thead><tr>
+            <th>卡</th><th>类型</th><th>实付</th><th>面值</th><th>每月次数</th><th>单次价</th>
+            <th>按次付现值</th><th>买卡现值</th><th>省下现值</th><th>平衡频率</th><th>判定</th>
+          </tr></thead>
+          <tbody id="cardBody"></tbody>
+        </table>
+      </div>
+      <p class="footnote">这一栏是<b>同一次 analyze() 的结果</b>，与上方主卡用的是同一套公式；每张卡各自带自己的假设。 <span class="scrollhint">窄屏下这张表可以左右滑动看完整列。</span></p>
+    </div>
+
+    <div class="card">
+      <h2>选中卡的详解 <span class="tag" id="detailName"></span></h2>
+      <div id="detailBody"></div>
+    </div>
+
+    <div class="card">
+      <h2>敏感性 <span class="tag gray" id="sensOf"></span></h2>
+      <div class="tw"><table id="sensTable">
+        <thead><tr><th>改动</th><th>累计折扣</th><th>按次付现值</th><th>买卡现值</th><th>省下现值</th><th>变化</th><th>平衡频率</th><th>判定</th></tr></thead>
+        <tbody id="sensBody"></tbody>
+      </table></div>
+      <p class="footnote">每一行都是<b>完整重算</b>过的，不是按比例估算。 <span class="scrollhint">窄屏下这张表可以左右滑动看完整列。</span></p>
+    </div>
+
+    <div class="card">
+      <h2>下一步</h2>
+      <ol class="tight" id="steps"></ol>
+    </div>
+
+    <div class="card">
+      <h2>这份账不算什么</h2>
+      <ul class="tight" id="limits"></ul>
+    </div>
+
+    <div class="card">
+      <h2>结构自检 <span class="tag gray" id="checkTag"></span></h2>
+      <ul class="tight" id="checks"></ul>
+      <p class="footnote">这些是每次重算都会跑的一致性与恒等式检查：两种付法之差 = 按次付现值 − 买卡现值、买卡现值 = 卡价 + 自付现值、名义支出 = 面值抵扣 + 自付、折现率归零时两口径相等、盈亏平衡频率回代命中卡价、衰减/消失/折现各自的单调方向、储值卡的折扣不超过「面值 × 折扣率」、结果里没有 NaN。它们是<b>本页内部一致性</b>的证据，不等于这些假设对现实成立。</p>
+    </div>
+  </main>
+</div>
+<script>/* 长期卡对账台 · 核心引擎（lifetime-ledger）
+ *
+ * 问题：「终身 / 多年 / 年卡 / 储值」这类一次付清、之后每次不再单独掏钱的卡，
+ *       到底值不值？我大概多久去一次、会不会越去越少、店会不会先没了？
+ *
+ * 口径（详见 需求与调研.md 第 4 节）。第 t 年（t = 0,1,2,…）：
+ *   存活概率        S_t = (1 − m)^t                       m = 年消失概率（用户假设）
+ *   当年到访次数    n_t = f × (1 − d)^t                   f = 第 1 年到访次数/年，d = 年到访衰减率
+ *   期望到访        E_t = n_t × S_t
+ *   当年折扣金额    D_t = E_t × A                          A = 单次价（不用卡时要付的钱）
+ *   折现因子        v_t = 1 / (1 + r)^t                    r = 年折现率
+ *   累计折扣现值    PV_T = Σ_{t=0..T} D_t · v_t
+ *   累计实付现值    P
+ *   净现值          NPV = PV_T − P                         （可比口径）
+ *   不折现口径      累计折扣 Σ E_t·A  与  累计实付 P       （不看时间价值的口径，两个都显示）
+ *   回本所需次数    Σ 到访次数 = P ÷ A
+ *   等效年费        P ÷ max(1, 卡面年限)
+ *   盈亏平衡频率    f* 使 Σ E_t·A = P（单调，二分求解）
+ *
+ * 储值卡（充值 P 得到面值 V = P + 赠送）：
+ *   赠送额 = V − P，赠送率 = 赠送 ÷ P
+ *   折扣率 = P ÷ V（按面值花出去时的实际折扣）
+ *   年内消费额 = min(E_t × A, 余额)，余额逐年递减 → 用尽后为「价值已用尽」，不再有折扣
+ *
+ * 验证与「不做什么」的边界见 需求与调研.md 与页面「这份账不算什么」。
+ */
+(function (root) {
+  'use strict';
+
+  const MAX_YEARS = 30;
+  const MAX_ITEMS = 6;
+  const NAME_MAX = 20;
+  const MAX_MONTHS_SIM = MAX_YEARS * 12;
+
+  /* 输入范围（都按「用户自填」设计，边界只用来挡住明显打错的输入） */
+  const MONEY_MIN = 0.01, MONEY_MAX = 10000000;   // 元
+  const PRICE_PER_USE_MIN = 0.01, PRICE_PER_USE_MAX = 1000000;
+  const VISITS_PER_MONTH_MIN = 0, VISITS_PER_MONTH_MAX = 365;
+  const RATE_MIN = 0, RATE_MAX = 100;   // 百分数（10 表示 10%）
+  const YEARS_MIN = 1, YEARS_MAX = MAX_YEARS;
+
+  const EPS = 1e-12;
+
+  /* ── 数字解析（字符串 → 数字，带字段级错误） ────────────── */
+  // 允许：普通小数、带千分位、中文全角空格、尾随「元/次/月/年/%」等单位后缀在 UI 侧先剥掉
+  function parseNum(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : NaN;
+    if (v === null || v === undefined) return NaN;
+    let s = String(v).trim();
+    if (!s) return NaN;
+    s = s.replace(/[，,\s_]/g, '').replace(/％/g, '%');
+    if (s.endsWith('%')) {
+      const n0 = Number(s.slice(0, -1));
+      return isFinite(n0) ? n0 / 100 : NaN;
+    }
+    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(s)) return NaN;
+    const n = Number(s);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function num(v) { const n = parseNum(v); return isFinite(n) ? n : NaN; }
+
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const r8 = (x) => Math.round(x * 1e8) / 1e8;
+  const r4 = (x) => Math.round(x * 10000) / 10000;
+  const r6 = (x) => Math.round(x * 1000000) / 1000000;
+
+  /* ── 格式化（UI 与导出共用；保证导出与页面同口径） ────── */
+  function fmtMoney(x) {
+    if (!isFinite(x)) return '—';
+    const neg = x < 0;
+    const a = Math.abs(x);
+    if (a > 0 && a < 0.01) return (neg ? '−' : '') + '< 0.01';
+    const s = a.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (neg ? '−' : '') + s;
+  }
+  function fmtMoney0(x) {
+    if (!isFinite(x)) return '—';
+    const neg = x < 0;
+    const a = Math.abs(x);
+    const s = a.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return (neg ? '−' : '') + s;
+  }
+  function fmtPct(x, digits) {
+    if (!isFinite(x)) return '—';
+    const d = digits === undefined ? 2 : digits;
+    const a = Math.abs(x) * 100;
+    if (a >= 100000) return (x < 0 ? '−' : '') + Math.round(a).toLocaleString('zh-CN') + '%';   // 极大百分比不要堆小数
+    if (a > 0 && a < Math.pow(10, -d) / 2) return (x < 0 ? '−' : '') + '< ' + (Math.pow(10, -d)).toFixed(d) + '%';
+    return (x < 0 ? '−' : '') + a.toFixed(d) + '%';
+  }
+  function fmtTimes(x, digits) {
+    if (!isFinite(x)) return '—';
+    const d = digits === undefined ? 2 : digits;
+    const a = Math.abs(x);
+    if (a > 0 && a < Math.pow(10, -d) / 2) return (x < 0 ? '−' : '') + '< ' + Math.pow(10, -d).toFixed(d);
+    return (x < 0 ? '−' : '') + a.toFixed(d);
+  }
+  /** 自适应金额：>= 1000 取整、>= 0.01 两位小数、更小给三位有效数字（避免「< 0.01」看不出量级） */
+  function fmtMoneyAdaptive(x) {
+    if (!isFinite(x)) return '—';
+    const a = Math.abs(x);
+    if (a === 0) return '0.00';
+    if (a >= 1000) return fmtMoney0(x);
+    if (a >= 0.01) return fmtMoney(x);
+    return (x < 0 ? '−' : '') + a.toPrecision(3) + '（不足 1 分）';
+  }
+  function fmtYears(x) {
+    if (!isFinite(x)) return '永远回不了本';
+    if (x <= 0) return '0';
+    if (x > MAX_YEARS) return '超过 ' + MAX_YEARS + ' 年';
+    return x >= 10 ? x.toFixed(1) : x.toFixed(2);
+  }
+
+  /* ── 输入规格 ─────────────────────────────────────────── */
+  const PAY_TYPES = [
+    { id: 'lifetime', name: '终身 / 一次买断', hint: '一次付清，之后不再单独付费，没有到期日' },
+    { id: 'multiyear', name: '多年卡 / 年卡', hint: '一次付清，卡面有明确年限（如 3 年卡）' },
+    { id: 'stored', name: '储值卡 / 充值卡', hint: '充值 P 得到面值 V，按次扣面值，用完为止' }
+  ];
+
+  const FIELDS = {
+    payType: { label: '卡的类型', kind: 'select' },
+    cardPrice: { label: '一次实付（元）', min: MONEY_MIN, max: MONEY_MAX },
+    cardFace: { label: '到手面值（元）', min: MONEY_MIN, max: MONEY_MAX, onlyType: 'stored', note: '含赠送；若不赠送就填与实付相同' },
+    cardYears: { label: '卡面年限（年）', min: YEARS_MIN, max: YEARS_MAX, onlyType: 'multiyear' },
+    visitsPerMonth: { label: '第 1 年每月去几次', min: VISITS_PER_MONTH_MIN, max: VISITS_PER_MONTH_MAX },
+    decayPerYear: { label: '年到访衰减率', min: RATE_MIN, max: RATE_MAX, isRate: true },
+    perUsePrice: { label: '不用卡时单次价（元）', min: PRICE_PER_USE_MIN, max: PRICE_PER_USE_MAX },
+    horizonYears: { label: '向前看几年', min: YEARS_MIN, max: YEARS_MAX },
+    discountRate: { label: '年折现率', min: RATE_MIN, max: RATE_MAX, isRate: true },
+    failurePerYear: { label: '店/商家年消失概率', min: RATE_MIN, max: RATE_MAX, isRate: true }
+  };
+
+  function defaults() {
+    return {
+      payType: 'lifetime',
+      cardPrice: '3600',
+      cardFace: '3600',
+      cardYears: '3',
+      visitsPerMonth: '6',
+      decayPerYear: '10',
+      perUsePrice: '75',
+      horizonYears: '10',
+      discountRate: '4',
+      failurePerYear: '5',
+      items: [
+        { name: '健身年卡', payType: 'multiyear', cardPrice: '2400', cardFace: '2400', cardYears: '2', visitsPerMonth: '6', decayPerYear: '15', perUsePrice: '50', horizonYears: '6', discountRate: '4', failurePerYear: '8' },
+        { name: '洗车储值卡', payType: 'stored', cardPrice: '1000', cardFace: '1200', cardYears: '1', visitsPerMonth: '1.5', decayPerYear: '5', perUsePrice: '40', horizonYears: '5', discountRate: '3', failurePerYear: '6' },
+        { name: '咖啡馆买断杯', payType: 'lifetime', cardPrice: '2680', cardFace: '2680', cardYears: '1', visitsPerMonth: '8', decayPerYear: '20', perUsePrice: '28', horizonYears: '8', discountRate: '3', failurePerYear: '12' }
+      ]
+    };
+  }
+
+  function defaultsClone() { return JSON.parse(JSON.stringify(defaults())); }
+
+  /* ── 校验 ─────────────────────────────────────────────── */
+  function normInput(raw) {
+    const d = defaults();
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const out = {};
+    const keys = ['payType', 'cardPrice', 'cardFace', 'cardYears', 'visitsPerMonth', 'decayPerYear', 'perUsePrice', 'horizonYears', 'discountRate', 'failurePerYear'];
+    keys.forEach(function (k) { out[k] = src[k] !== undefined ? src[k] : d[k]; });
+    out.items = Array.isArray(src.items) ? src.items : d.items;
+    return out;
+  }
+
+  function normItem(it, i) {
+    const src = it && typeof it === 'object' ? it : {};
+    return {
+      name: typeof src.name === 'string' ? src.name : String(src.name === undefined ? '卡 ' + (i + 1) : src.name),
+      payType: src.payType || 'lifetime',
+      cardPrice: src.cardPrice,
+      cardFace: src.cardFace,
+      cardYears: src.cardYears,
+      visitsPerMonth: src.visitsPerMonth,
+      decayPerYear: src.decayPerYear,
+      perUsePrice: src.perUsePrice,
+      horizonYears: src.horizonYears,
+      discountRate: src.discountRate,
+      failurePerYear: src.failurePerYear
+    };
+  }
+
+  /** 校验一份输入（主配置或清单里的一条）。返回 {ok, errors, cfg} */
+  function validateOne(raw, prefix) {
+    const p = prefix || '';
+    const errors = [];
+    const cfg = normInput(raw);
+    const pt = PAY_TYPES.filter(function (x) { return x.id === cfg.payType; })[0];
+    if (!pt) errors.push({ field: p + 'payType', msg: '卡的类型不在可选范围内' });
+
+    const money = function (key, label) {
+      const n = num(cfg[key]);
+      const f = FIELDS[key];
+      if (!isFinite(n)) return errors.push({ field: p + key, msg: label + '不是有效数字' }), NaN;
+      if (n < f.min) return errors.push({ field: p + key, msg: label + '不能小于 ' + f.min + ' 元' }), NaN;
+      if (n > f.max) return errors.push({ field: p + key, msg: label + '不能大于 ' + fmtMoney0(f.max) + ' 元' }), NaN;
+      return r2(n);
+    };
+    const rate = function (key, label) {
+      const n = num(cfg[key]);
+      const f = FIELDS[key];
+      if (!isFinite(n)) return errors.push({ field: p + key, msg: label + '不是有效数字' }), NaN;
+      if (n < f.min) return errors.push({ field: p + key, msg: label + '不能小于 0' }), NaN;
+      if (n > f.max) return errors.push({ field: p + key, msg: label + '不能大于 100%' }), NaN;
+      return n;   // 内部统一存百分数
+    };
+    const years = function (key, label) {
+      const n = num(cfg[key]);
+      const f = FIELDS[key];
+      if (!isFinite(n)) return errors.push({ field: p + key, msg: label + '不是有效数字' }), NaN;
+      if (n < f.min) return errors.push({ field: p + key, msg: label + '不能小于 ' + f.min + ' 年' }), NaN;
+      if (n > f.max) return errors.push({ field: p + key, msg: label + '不能大于 ' + f.max + ' 年' }), NaN;
+      if (n !== Math.round(n)) return errors.push({ field: p + key, msg: label + '必须是整年数（本页按整年分段）' }), NaN;
+      return Math.round(n);
+    };
+
+    const cardPrice = money('cardPrice', '一次实付');
+    const perUsePrice = money('perUsePrice', '不用卡时单次价');
+    const vpm = num(cfg.visitsPerMonth);
+    if (!isFinite(vpm)) errors.push({ field: p + 'visitsPerMonth', msg: '每月到访次数不是有效数字' });
+    else if (vpm < VISITS_PER_MONTH_MIN) errors.push({ field: p + 'visitsPerMonth', msg: '每月到访次数不能是负数' });
+    else if (vpm > VISITS_PER_MONTH_MAX) errors.push({ field: p + 'visitsPerMonth', msg: '每月到访次数不能大于 ' + VISITS_PER_MONTH_MAX + ' 次' });
+    const decay = rate('decayPerYear', '年到访衰减率');
+    const horizon = years('horizonYears', '向前看年数');
+    const disc = rate('discountRate', '年折现率');
+    const fail = rate('failurePerYear', '年消失概率');
+
+    let cardFace = cardPrice, cardYears = 1;
+    if (cfg.payType === 'stored') {
+      cardFace = money('cardFace', '到手面值');
+      if (isFinite(cardFace) && isFinite(cardPrice) && cardFace < cardPrice) {
+        errors.push({ field: p + 'cardFace', msg: '到手面值不能小于一次实付（赠送只能是正的）' });
+      }
+      cardYears = isFinite(horizon) ? horizon : YEARS_MIN;
+    } else if (cfg.payType === 'multiyear') {
+      cardYears = years('cardYears', '卡面年限');
+      cardFace = cardPrice;
+    } else {
+      cardYears = isFinite(horizon) ? horizon : YEARS_MIN;
+      cardFace = cardPrice;
+    }
+
+    const name = String(cfg.name === undefined ? '' : cfg.name);
+    return {
+      ok: errors.length === 0,
+      errors: errors,
+      cfg: {
+        payType: cfg.payType,
+        cardPrice: cardPrice,
+        cardFace: cardFace,
+        cardYears: cardYears,
+        visitsPerMonth: isFinite(vpm) ? vpm : NaN,
+        decayPerYear: decay,
+        perUsePrice: perUsePrice,
+        horizonYears: isFinite(horizon) ? horizon : NaN,
+        discountRate: disc,
+        failurePerYear: fail
+      }
+    };
+  }
+
+  /* ── 独立对照实现：按路径随机模拟（只用于交叉验证，不参与页面输出） ──
+   * 与 simulate() 完全独立的算法：不套用 E_t = n_t·S_t 这个推导，而是逐路径抽
+   * 「第 t 年店还在吗」（伯努利，概率 (1−m)^t）与「这一年去了几次」（泊松到达），
+   * 再对所有路径取平均。用于核验期望值推导。
+   * 注意：泊松到达是「次数随机」的建模选择，与 simulate() 的「次数取期望值」在期望上
+   *       相等（E[Poisson(λ)] = λ），这正是要验证的恒等式。
+   */
+  function monteCarlo(cfg, opts) {
+    const o = opts || {};
+    const N = o.paths || 200000;
+    /* mulberry32：LCG 的格点结构与 Box–Muller 配对会带来可测偏差（本轮实测 z≈20），
+     * 换成就地实现的 mulberry32（32 位全周期，统计性质足够本用途）。 */
+    const rng = o.rng || (function () {
+      let a = (o.seed === undefined ? 20261110 : o.seed) >>> 0;
+      return function () {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    })();
+    const P = cfg.cardPrice, V = cfg.cardFace, A = cfg.perUsePrice;
+    const f0 = cfg.visitsPerMonth * 12;
+    const d = cfg.decayPerYear / 100, r = cfg.discountRate / 100, m = cfg.failurePerYear / 100;
+    const T = cfg.horizonYears;
+    const isStored = cfg.payType === 'stored';
+    const dr = isStored ? (V > 0 ? P / V : 1) : 0;
+    const expiresAfter = cfg.payType === 'multiyear' ? cfg.cardYears : Infinity;
+    const expiredAt = function (t) { return t >= expiresAfter; };
+    const pois = function (lam) {              // Knuth
+      if (!(lam > 0)) return 0;
+      if (lam > 500) {                         // 大 λ 用正态近似，避免超时
+        const u1 = Math.max(1e-12, rng()), u2 = rng();
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        return Math.max(0, Math.round(lam + Math.sqrt(lam) * z));
+      }
+      const L = Math.exp(-lam);
+      let k = 0, p = 1;
+      do { k++; p *= rng(); } while (p > L);
+      return k - 1;
+    };
+    /* 逐年「店还在不在」：第 1 年必然还在（概率 1），此后每一年以条件概率 m 消失，
+     * 所以第 t 年还开着的概率 = (1−m)^t（几何寿命的存活函数）。
+     * 两个容易写错的版本（我本轮都踩过，如实记在 质检报告.md）：
+     *   ① 抽一次「店一共活了几年」再对 T 截断 —— 那是 E[min(Y,T)]（默认档 7.62 年），
+     *      与 Σ(1−m)^t（8.03 年）不是同一个量；
+     *   ② 逐年伯努利用 (1−m)^t 当阈值 —— 连乘后概率被平方级压低（实测 Σ 只剩 5.41 年）。 */
+    let sumValue = 0, sumPV = 0, sumVisits = 0, sumSqValue = 0, sumSqPV = 0;
+    for (let i = 0; i < N; i++) {
+      let bal = isStored ? V : Infinity;
+      let val = 0, pv = 0, vis = 0;
+      for (let t = 0; t < T; t++) {
+        if (t >= expiresAfter) break;
+        if (t > 0 && rng() < m) break;         // 每年以条件概率 m 消失；第 1 年不会消失
+        const lam = f0 * Math.pow(1 - d, t);
+        const k = pois(lam);
+        vis += k;
+        if (isStored) {
+          const sp = Math.min(k * A, bal);
+          bal -= sp;
+          const add = sp * dr;
+          val += add; pv += add / Math.pow(1 + r, t);
+          if (bal <= 0) break;
+        } else {
+          const add = k * A;
+          val += add; pv += add / Math.pow(1 + r, t);
+        }
+      }
+      sumValue += val; sumPV += pv; sumVisits += vis; sumSqValue += val * val; sumSqPV += pv * pv;
+    }
+    const se = function (sum, sumSq) {
+      const mean = sum / N;
+      const varN = Math.max(0, sumSq / N - mean * mean) / N;
+      return Math.sqrt(varN);
+    };
+    return {
+      paths: N,
+      meanValue: sumValue / N,
+      meanPV: sumPV / N,
+      meanVisits: sumVisits / N,
+      seValue: se(sumValue, sumSqValue),
+      sePV: se(sumPV, sumSqPV)
+    };
+  }
+
+  /* ── 泊松到达下的「期望封顶消费」 ─────────────────────────
+   * 储值卡每年按面值消费，受余额封顶：consumed = min(k·A, balance)，k ~ 泊松(λ)。
+   * 直接用 min(λ·A, balance) 是错的（Jensen 不等式：min 是凹函数，E[min] < min(E)），
+   * 本轮实测差 2.5%（默认储值档 MC 974.79 vs 引擎 1000.00）。这里按 k 的分布
+   * 逐项求条件期望：Σ_k P(k) · min(k·A, balance)，尾部截断到概率和 1−1e-14。
+   */
+  function poissonPmf(lam, kMax) {
+    const out = new Array(kMax + 1).fill(0);
+    if (!(lam > 0)) { out[0] = 1; return out; }
+    let k0 = Math.floor(lam), p0 = Math.exp(-lam + k0 * Math.log(lam) - lgamma(k0 + 1));
+    if (!isFinite(p0) || p0 <= 0) {                       // 极大 λ 的兜底：正态近似
+      const sd = Math.sqrt(lam);
+      for (let k = 0; k <= kMax; k++) {
+        const z = (k + 0.5 - lam) / sd;
+        out[k] = Math.exp(-0.5 * z * z) / (sd * Math.sqrt(2 * Math.PI));
+      }
+      return out;
+    }
+    out[k0] = p0;
+    for (let k = k0; k > 0; k--) out[k - 1] = out[k] * k / lam;
+    for (let k = k0; k < kMax; k++) out[k + 1] = out[k] * lam / (k + 1);
+    return out;
+  }
+
+  /* lgamma（Lanczos），只为算泊松 PMF 的归一化常数 */
+  function lgamma(x) {
+    const g = [676.5203681218851, -1259.1392167224028, 771.32342877765313,
+      -176.61502916214059, 12.507343278686905, -0.13857109526572012,
+      9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
+    x -= 1;
+    let a = 0.99999999999980993, t = x + 7.5;
+    for (let i = 0; i < 8; i++) a += g[i] / (x + i + 1);
+    return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+  }
+
+  /** 期望封顶消费：E[min(K·A, balance)]，K ~ 泊松(λ) */
+  function expectedCappedConsumption(lam, A, balance) {
+    if (!(balance > 0)) return 0;
+    if (!(lam > 0)) return 0;
+    /* 不要用 lam*A <= balance 做提前返回：当 balance 恰好落在 λ 附近（拐点就在均值上）时，
+     * 触顶其实有可观概率，提前返回会高估（本轮实测 λ=18、A=40、余额=1200 时高估 0.283 元）。
+     * 只有当触顶概率小到浮点上都看不见时才走捷径。 */
+    const knee = Math.ceil(balance / A);
+    if (lam * A <= balance && knee > lam + 12 * Math.sqrt(lam) + 8) {
+      return lam * A;                                     // 触顶在 12σ 之外，忽略不计
+    }
+    const kMax = Math.max(knee + 1, Math.ceil(lam + 12 * Math.sqrt(lam) + 20), knee + 20);
+    const pmf = poissonPmf(lam, kMax);
+    let sum = 0, acc = 0;
+    for (let k = 0; k <= kMax; k++) {
+      const p = pmf[k];
+      acc += p;
+      sum += p * Math.min(k * A, balance);
+      if (k > knee && acc > 1 - 1e-14) break;
+    }
+    /* 尾部（k > kMax）必然已全部触顶，消费就是 balance */
+    const tail = Math.max(0, 1 - acc);
+    return sum + tail * balance;
+  }
+
+  /* ── 单卡逐年模拟 ─────────────────────────────────────── */
+  /**
+   * rows: 第 t 年（t=0 起）
+   *   t, survive S_t, visits n_t（未乘存活），expectedVisits E_t,
+   *   perUseValue 当年折扣金额（储值卡为「按面值花掉的钱 × 折扣率」）
+   *   cumValue 累计（不折现），cumValuePV 累计现值
+   *   cumVisits 累计期望到访次数, cumCashPay 累计实付
+   *   balanceLeft 储值卡年末余额
+   */
+  function simulate(cfg) {
+    const rows = [];
+    const P = cfg.cardPrice;
+    const V = cfg.cardFace;
+    const A = cfg.perUsePrice;
+    const f0 = cfg.visitsPerMonth * 12;
+    const d = cfg.decayPerYear / 100;
+    const r = cfg.discountRate / 100;
+    const m = cfg.failurePerYear / 100;
+    const T = cfg.horizonYears;
+    const isStored = cfg.payType === 'stored';
+    const discountRateOnFace = isStored ? (V > 0 ? P / V : 1) : 0;   // 按面值消费时的实际折价
+    const bonus = isStored ? Math.max(0, V - P) : 0;
+    /* 卡面到期：多年卡到期后不再有用（当作卡权益终止）。终身卡与储值卡不受卡面年限限制。 */
+    const expiresAfter = cfg.payType === 'multiyear' ? cfg.cardYears : Infinity;
+    const expiredAt = function (t) { return t >= expiresAfter; };
+
+    let cumVisits = 0, cumDecayVisits = 0, cumUsedVisits = 0, cumValue = 0, cumValuePV = 0, balance = isStored ? V : Infinity;
+    let usedYears = 0, expireYear = null, exhaustYear = null, paybackYear = null, paybackT = null;
+
+    for (let t = 0; t < T; t++) {
+      const survive = Math.pow(1 - m, t);
+      const decayVisits = f0 * Math.pow(1 - d, t);   // 只按到访衰减（不乘存活）
+      const visits = decayVisits;                    // λ_t：以「店还在」为条件的当年期望到访次数
+      const expectedVisits = decayVisits * survive;  // E_t = n_t · S_t（只乘一次存活）
+      const expired = expiredAt(t);
+      let valueGross = 0, spent = 0;
+      if (!expired) {
+        if (isStored) {
+          /* 储值卡：余额只在「店还在」的分支里被消费（S_t 倍），
+           * 所以逐年递推的是「以店还在为条件的期望消费」；
+           * 直接按全部路径均摊余额会让任何路径都到不了 0（本轮实测过这个错）。 */
+          if (balance > EPS) {
+            spent = Math.min(expectedCappedConsumption(visits, A, balance), balance);
+            balance -= spent;
+            /* 浮点残差归零：期末余额在「面值的 1e-12」以内就当作已用尽。
+             * 不做这一步时会出现余额 = 5.46e-12 元的残渣，让「是否用尽」的判断在边界上
+             * 抖动（随机 300 组测试抓到过）：既影响 exhaustYear，也让自检前提判错。 */
+            if (balance <= Math.max(1e-9, V * 1e-12)) { balance = 0; if (exhaustYear === null) exhaustYear = t + 1; }
+          }
+          valueGross = survive * spent * discountRateOnFace;
+        } else {
+          valueGross = expectedVisits * A;
+        }
+      } else if (expireYear === null) {
+        expireYear = t + 1;
+      }
+      const v = 1 / Math.pow(1 + r, t);
+      cumVisits += expectedVisits;                 // 期望到访（含「店已消失」的路径）
+      cumDecayVisits += expired ? 0 : decayVisits * survive;   // Σ n_t·S_t：只按衰减+存活，不含已到期年
+      cumUsedVisits += (isStored ? spent / Math.max(EPS, A) : (expired ? 0 : expectedVisits));
+      cumValue += valueGross;
+      cumValuePV += valueGross * v;
+      if (!expired) usedYears = t + 1;
+      if (isStored && balance === 0 && t + 1 < usedYears) usedYears = t + 1;
+      const cashPaid = P;
+      if (paybackT === null && cumValue >= P - EPS) { paybackT = t + 1; paybackYear = t + 1; }
+      rows.push({
+        t: t, year: t + 1,
+        survive: survive,
+        visits: visits,
+        expectedVisits: expectedVisits,
+        expired: expired,
+        spent: spent,
+        balanceLeft: isStored ? balance : null,
+        valueGross: valueGross,
+        cumVisits: cumVisits,
+        cumValue: cumValue,
+        cumValuePV: cumValuePV,
+        cashPaid: cashPaid,
+        net: cumValue - cashPaid,
+        netPV: cumValuePV - cashPaid
+      });
+    }
+
+    /* 对照实现：同一到访把「全程按次付」与「买卡（不够的部分按次付）」两种付法逐年摊开。
+     * 这一步是「结论」的来源——储值卡有赠送时，「累计折扣 vs 卡价」会误判为不划算：
+     * 折扣只在面值被花掉的那一刻兑现，而卡价是先掏的，两者不能直接比大小，
+     * 要比的是 [全程按次付] 与 [买卡 + 面值不够时按次付] 的现值。 */
+    const notionalAnnual = cfg.visitsPerMonth * 12;
+    let costNoCard = 0, costWithCard = 0, cumNotional = 0, cumFaceRedeemed = 0, cumSelfPay = 0;
+    for (let t = 0; t < T; t++) {
+      const sv = Math.pow(1 - m, t);
+      const n = expiredAt(t) ? 0 : notionalAnnual * Math.pow(1 - d, t);
+      const notional = n * A;                      // 这一年「本来要按次付」的金额
+      const redeemed = isStored ? Math.min(notional, rows[t].spent) : notional;
+      const selfPay = notional - redeemed;         // 卡不够用时自己补的部分
+      const v = 1 / Math.pow(1 + r, t);
+      cumNotional += sv * notional;
+      cumFaceRedeemed += sv * redeemed;
+      cumSelfPay += sv * selfPay;
+      costNoCard += sv * notional * v;
+      costWithCard += sv * selfPay * v;
+    }
+    costWithCard += P;                             // 卡价在第 0 年一次性付清
+    const costNoCardUndisc = cumNotional;
+    const savingPV = costNoCard - costWithCard;
+
+    /* 回本所需累计次数（不折现口径） */
+    const visitsToPayback = A > 0 ? P / A : Infinity;
+    /* 若 horizon 内已回本，用更细的年内插值给出「第几年」；否则看单调性外推 */
+    let paybackYears = Infinity;
+    if (cumValue >= P && T > 0) {
+      paybackYears = paybackT;
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i].cumValue >= P - EPS) {
+          const prev = i === 0 ? 0 : rows[i - 1].cumValue;
+          const add = rows[i].cumValue - prev;
+          const frac = add > EPS ? (P - prev) / add : 0;
+          paybackYears = i + Math.max(0, Math.min(1, frac));
+          break;
+        }
+      }
+    } else {
+      /* 外推：若每年来访仍在正增长（d = 0 且 m = 0）且未回本，说明永远回不了本 */
+      const stillGrowing = (d <= EPS && m <= EPS) && cumValue < P - EPS;
+      paybackYears = stillGrowing ? Infinity : (cumValue >= P - EPS ? T : Infinity);
+      if (!stillGrowing && cumValue + EPS < P) {
+        /* 衰减情形：继续外推到 30 年，看有没有可能 */
+        let c = cumValue, f = f0 * Math.pow(1 - d, T) * Math.pow(1 - m, T);
+        let ext = T;
+        while (ext < MAX_YEARS && c < P - EPS) {
+          c += f * A;
+          f *= (1 - d) * (1 - m);
+          ext++;
+        }
+        paybackYears = c >= P - EPS ? ext : Infinity;
+      }
+    }
+
+    /* 盈亏平衡所需「第 1 年每月次数」f*：把整份模拟按 f 线性缩放后二分 */
+    function cumValueForF(f1) {
+      let c = 0, bal = isStored ? V : Infinity;
+      const f0x = f1 * 12;
+      for (let t = 0; t < T; t++) {
+        if (t >= expiresAfter) break;
+        const sv = Math.pow(1 - m, t);
+        const n = f0x * Math.pow(1 - d, t);
+        if (isStored) {
+          const sp = Math.min(expectedCappedConsumption(n, A, bal), bal);
+          bal -= sp;
+          c += sv * sp * discountRateOnFace;
+          if (bal <= Math.max(1e-9, V * 1e-12)) break;
+        } else {
+          c += n * sv * A;
+        }
+      }
+      return c;
+    }
+    let breakevenPerMonth = null;
+    const atZero = cumValueForF(0);
+    const huge = cumValueForF(VISITS_PER_MONTH_MAX);
+    if (atZero >= P - EPS) {
+      breakevenPerMonth = 0;                       // 不办也「够本」的退化情形（储值卡赠送 > 一切）
+    } else if (huge < P - EPS) {
+      breakevenPerMonth = Infinity;                // 哪怕天天去也回不了本
+    } else {
+      let lo = 0, hi = VISITS_PER_MONTH_MAX;
+      for (let i = 0; i < 200; i++) {
+        const mid = (lo + hi) / 2;
+        if (cumValueForF(mid) >= P) hi = mid; else lo = mid;
+      }
+      breakevenPerMonth = (lo + hi) / 2;
+    }
+
+    const equivalentAnnual = P / Math.max(1, usedYears > 0 ? usedYears : 1);
+    const cardAnnual = P / Math.max(1, cfg.cardYears);
+    return {
+      rows: rows,
+      cumVisits: cumVisits,
+      cumDecayVisits: cumDecayVisits,
+      cumUsedVisits: cumUsedVisits,
+      cumValue: cumValue,
+      cumValuePV: cumValuePV,
+      net: cumValue - P,
+      netPV: cumValuePV - P,
+      visitsToPayback: visitsToPayback,
+      paybackYears: paybackYears,
+      usedYears: usedYears,
+      expireYear: expireYear,
+      exhaustYear: exhaustYear,
+      equivalentAnnual: equivalentAnnual,
+      cardAnnual: cardAnnual,
+      breakevenPerMonth: breakevenPerMonth,
+      bonus: bonus,
+      discountRateOnFace: discountRateOnFace,
+      balanceLeft: isStored ? balance : 0,
+      faceLeftRatio: isStored && V > 0 ? balance / V : 0,
+      effectiveDiscount: cumVisits > 0 ? 1 - P / (cumVisits * A) : NaN,
+      /* 两种付法的对照（结论就取这里的 savingPV） */
+      costNoCard: costNoCard,
+      costWithCard: costWithCard,
+      costNoCardUndisc: costNoCardUndisc,
+      cumNotional: cumNotional,
+      cumFaceRedeemed: cumFaceRedeemed,
+      cumSelfPay: cumSelfPay,
+      savingPV: savingPV,
+      savingUndisc: cumNotional - cumSelfPay - P,
+      selfPayPV: costWithCard - P
+    };
+  }
+
+  /* ── 判定分档（只是显示分组，不是价值判断标准） ────────── */
+  /** 判定：比的是「全程按次付」与「买卡」两种付法的现值（savingPV > 0 才叫划算）
+   *  阈值 25% 只是显示分组（省下超过卡价四分之一就算明显），不是任何标准。 */
+  function verdictOf(sim) {
+    const P = sim.rows.length ? sim.rows[0].cashPaid : 1;
+    const sv = sim.savingPV;
+    const ratio = sim.costWithCard > 0 ? sim.costNoCard / sim.costWithCard : Infinity;
+    if (!isFinite(sv)) return { id: 'loss', label: '无法比较', pill: 'fail', ratio: ratio, savingPV: sv };
+    if (sv < 0) return { id: 'loss', label: '买卡不如全程按次付', pill: 'fail', ratio: ratio, savingPV: sv };
+    if (sv >= 0.25 * Math.max(EPS, P)) return { id: 'win', label: '明显划算', pill: 'ok', ratio: ratio, savingPV: sv };
+    return { id: 'flat', label: '刚够本（省得有限）', pill: 'tight', ratio: ratio, savingPV: sv };
+  }
+
+  /** 数值稳定的合成率：x = 1 − (1−d)(1−m) = d + m − d·m
+   *  直接写 1−(1−d)(1−m) 在 d、m 都很小的时候会灾难性相消（本轮实测：d=0.1739、m=0.001
+   *  时式子给出 0 与 0 相减，闭式算出 NaN，由随机 300 组测试抓出）。 */
+  function rateX(d, m) { return d + m - d * m; }
+
+  /** 等比求和 Σ_{t<T} f0·[(1−d)(1−m)]^t 的数值稳定闭式（供自检对照）；T 为有效年数 */
+  function xSafeClosed(f0, d, m, T) {
+    const x = rateX(d, m);
+    if (!(x > 0)) return f0 * T;
+    return f0 * (-Math.expm1(T * Math.log1p(-x))) / (-Math.expm1(Math.log1p(-x)));
+  }
+
+  /* ── 主分析 ───────────────────────────────────────────── */
+  function analyze(raw) {
+    const v = validateOne(raw, '');
+    if (!v.ok) return { ok: false, errors: v.errors };
+    const cfg = v.cfg;
+    const sim = simulate(cfg);
+
+    const items = [];
+    const rawItems = Array.isArray(raw && raw.items) ? raw.items.slice(0, MAX_ITEMS) : [];
+    rawItems.forEach(function (it, i) {
+      const one = validateOne(normItem(it, i), 'items.' + i + '.');
+      const name = String(normItem(it, i).name).slice(0, NAME_MAX) || ('卡 ' + (i + 1));
+      if (!one.ok) { items.push({ ok: false, name: name, errors: one.errors }); return; }
+      const s = simulate(one.cfg);
+      items.push({ ok: true, name: name, cfg: one.cfg, sim: s, verdict: verdictOf(s) });
+    });
+
+    const verdict = verdictOf(sim);
+
+    /* 敏感性：每行完整重算 */
+    const sens = sensitivity(cfg);
+
+    /* 条例对照 */
+    const laws = lawsOf(cfg, sim);
+
+    const res = {
+      ok: true,
+      cfg: cfg,
+      rows: sim.rows,
+      sim: sim,
+      verdict: verdict,
+      isStored: cfg.payType === 'stored',
+      items: items,
+      sens: sens,
+      laws: laws,
+      insights: [],
+      checks: []
+    };
+    res.insights = buildInsights(res);
+    res.checks = verify(res);
+    return res;
+  }
+
+  /* ── 敏感性 ───────────────────────────────────────────── */
+  function withPatch(cfg, patch) {
+    const c = Object.assign({}, cfg, patch);
+    const s = simulate(c);
+    return { cfg: c, sim: s, verdict: verdictOf(s) };
+  }
+
+  function sensitivity(cfg) {
+    const base = simulate(cfg);
+    const P = cfg.cardPrice;
+    const rows = [];
+    const push = function (label, patch) {
+      const r = withPatch(cfg, patch);
+      rows.push({
+        label: label,
+        cfg: r.cfg,
+        net: r.sim.net,
+        netPV: r.sim.netPV,
+        cumValue: r.sim.cumValue,
+        cumValuePV: r.sim.cumValuePV,
+        costNoCard: r.sim.costNoCard,
+        costWithCard: r.sim.costWithCard,
+        savingPV: r.sim.savingPV,
+        savingUndisc: r.sim.savingUndisc,
+        paybackYears: r.sim.paybackYears,
+        breakevenPerMonth: r.sim.breakevenPerMonth,
+        verdict: r.verdict,
+        delta: r.sim.net - base.net,
+        deltaPV: r.sim.savingPV - base.savingPV      // 变化按「省下现值」算，与结论同口径
+      });
+    };
+    push('当前设置', {});
+    push('单次价比现在高 20%', { perUsePrice: r2(cfg.perUsePrice * 1.2) });
+    push('单次价比现在低 20%', { perUsePrice: r2(cfg.perUsePrice * 0.8) });
+    push('每月次数 +1 次', { visitsPerMonth: Math.min(VISITS_PER_MONTH_MAX, r2(cfg.visitsPerMonth + 1)) });
+    push('每月次数 ×2', { visitsPerMonth: Math.min(VISITS_PER_MONTH_MAX, r2(cfg.visitsPerMonth * 2)) });
+    push('年到访衰减率 +10 个百分点', { decayPerYear: Math.min(RATE_MAX, r2(cfg.decayPerYear + 10)) });
+    push('年到访衰减率归零', { decayPerYear: 0 });
+    push('年消失概率翻倍', { failurePerYear: Math.min(RATE_MAX, r2(cfg.failurePerYear * 2)) });
+    push('年消失概率归零（当作永续）', { failurePerYear: 0 });
+    push('折现率 +4 个百分点', { discountRate: Math.min(RATE_MAX, r2(cfg.discountRate + 4)) });
+    push('折现率归零（不看时间价值）', { discountRate: 0 });
+    push('年限 +2 年', { horizonYears: Math.min(YEARS_MAX, cfg.horizonYears + 2) });
+    if (cfg.payType === 'multiyear') push('卡面年限 +1 年', { cardYears: Math.min(YEARS_MAX, cfg.cardYears + 1) });
+    push('一次实付降 10%', { cardPrice: r2(P * 0.9) });
+    push('一次实付升 10%', { cardPrice: r2(P * 1.1) });
+    return rows;
+  }
+
+  /* ── 口径对照（几条恒等式/法则，供页面复核） ────────────── */
+  function lawsOf(cfg, sim) {
+    const A = cfg.perUsePrice, P = cfg.cardPrice;
+    const f0 = cfg.visitsPerMonth * 12;
+    const T = cfg.horizonYears;
+    const d = cfg.decayPerYear / 100, m = cfg.failurePerYear / 100;   // 百分数 → 小数（漏掉这步会让 x > 1 → log1p 返回 NaN）
+
+    /* 不看衰减与消失时：累计期望到访 = f0 × T
+     * 两处坑（本轮都踩过，随机 300 组测试抓出）：
+     *   ① 直接用 1−(1−d)(1−m)：d、m 极小时灾难性相消，曾把 decaySum 算成 7.52e15；
+     *   ② 忘了把百分数除 100：x > 1 时 Math.log1p(-x) = NaN，decaySum 直接变 NaN。
+     * 现在用 rateX(d, m) = d + m − d·m 且 d、m 都已是小数。 */
+    const noDecaySum = f0 * T;
+    const x = rateX(d, m);
+    const decaySum = x <= 0
+      ? noDecaySum
+      : f0 * (-Math.expm1(T * Math.log1p(-x))) / (-Math.expm1(Math.log1p(-x)));
+
+    /* 回本所需累计次数 = P ÷ A，与衰减、消失、折现都无关 */
+    const needVisits = P / A;
+
+    /* 等效年费的两种口径 */
+    const eqByUsed = sim.usedYears > 0 ? P / sim.usedYears : Infinity;
+    const eqByFace = P / Math.max(1, cfg.cardYears);
+    const eqByVisits = sim.cumVisits > 0 ? P / (sim.cumVisits / 12) : Infinity;
+
+    /* 储值卡的赠送与实际折扣 */
+    const bonus = sim.bonus;
+    const bonusRate = cfg.payType === 'stored' && P > 0 ? bonus / P : 0;
+    const faceDiscount = cfg.payType === 'stored' && cfg.cardFace > 0 ? P / cfg.cardFace : 1;
+
+    return {
+      noDecaySum: noDecaySum,
+      decaySum: decaySum,
+      needVisits: needVisits,
+      eqByUsed: eqByUsed,
+      eqByFace: eqByFace,
+      eqByVisits: eqByVisits,
+      bonus: bonus,
+      bonusRate: bonusRate,
+      faceDiscount: faceDiscount,
+      /* 「等价单次成本」：把实付摊到实际用到的次数上 */
+      costPerVisit: sim.cumVisits > 0 ? P / sim.cumVisits : Infinity,
+      payVsSingle: sim.cumVisits > 0 ? (P / sim.cumVisits) / A : Infinity
+    };
+  }
+
+  /* ── 要点（每条都必须能在表里复核） ─────────────────────── */
+  function buildInsights(res) {
+    const cfg = res.cfg, sim = res.sim, out = [];
+    const A = cfg.perUsePrice, P = cfg.cardPrice;
+
+    out.push({
+      t: '回本（折扣累计追上卡价）需要的次数与衰减、消失、折现都无关',
+      d: '回本只看「累计折扣金额」追上「一次实付」：需要 ' + fmtTimes(sim.visitsToPayback, 2) + ' 次（' + fmtMoney0(P) + ' ÷ ' +
+        fmtMoney(A) + '）。但「多久能凑够这些次数」取决于衰减与消失——所以同一张卡，去得越勤越可能回本。'
+    });
+
+    if (sim.breakevenPerMonth === null || sim.breakevenPerMonth === Infinity) {
+      out.push({
+        t: '这张卡在这一组假设下永远回不了本',
+        d: '哪怕每月去 ' + VISITS_PER_MONTH_MAX + ' 次（' + fmtMoney0(VISITS_PER_MONTH_MAX * 12) + ' 次/年），累计折扣也追不上 ' +
+          fmtMoney0(P) + ' 元。原因通常是单次价太低、卡面年限太短，或年消失概率太高。'
+      });
+    } else {
+      const cur = cfg.visitsPerMonth;
+      out.push({
+        t: '盈亏平衡在第 1 年每月 ' + fmtTimes(sim.breakevenPerMonth, 2) + ' 次',
+        d: '你填的是每月 ' + fmtTimes(cur, 2) + ' 次，' + (cur >= sim.breakevenPerMonth
+          ? '比平衡点高 ' + fmtTimes(cur - sim.breakevenPerMonth, 2) + ' 次 → 按这组假设是划算的。'
+          : '比平衡点低 ' + fmtTimes(sim.breakevenPerMonth - cur, 2) + ' 次 → 按这组假设不划算。') +
+          ' 平衡点已经把衰减、消失与（多年卡）卡面年限都算进去了。'
+      });
+    }
+
+    if (cfg.payType === 'stored') {
+      out.push({
+        t: '储值卡先看赠送率，再看你会不会用不完',
+        d: '实付 ' + fmtMoney0(P) + ' 拿到面值 ' + fmtMoney0(cfg.cardFace) + '，赠送 ' + fmtMoney0(sim.bonus) +
+          '（+' + fmtPct(sim.bonus / P, 1) + '），按面值消费时相当于 ' + fmtPct(1 - sim.discountRateOnFace, 2) + ' 的折扣。' +
+          (sim.exhaustYear ? '按当前频率第 ' + sim.exhaustYear + ' 年用尽' : '按当前频率 ' + cfg.horizonYears + ' 年内用不完') +
+          '，期末还剩 ' + fmtMoney0(sim.balanceLeft) + ' 元面值（占面值 ' + fmtPct(sim.faceLeftRatio, 1) + '）——这部分是你先垫出去、还没换成服务的钱。'
+      });
+    }
+
+    if (sim.expireYear) {
+      out.push({
+        t: '卡面年限会在第 ' + sim.expireYear + ' 年把权益截断',
+        d: '多年卡只有 ' + cfg.cardYears + ' 年有效期，第 ' + sim.expireYear + ' 年起不再产生折扣。向前看 ' + cfg.horizonYears +
+          ' 年，后面 ' + (cfg.horizonYears - cfg.cardYears) + ' 年对这张卡是空账（想继续用就得再掏一次钱）。'
+      });
+    }
+
+    /* 衰减与消失各自砍掉多少 */
+    const base = simulate(cfg);
+    const sNoDecay = simulate(Object.assign({}, cfg, { decayPerYear: 0 }));
+    const sNoFail = simulate(Object.assign({}, cfg, { failurePerYear: 0 }));
+    const sNeither = simulate(Object.assign({}, cfg, { decayPerYear: 0, failurePerYear: 0 }));
+    out.push({
+      t: '你的「越去越少」比「店会不会没了」更值钱',
+      d: '累计折扣 ' + fmtMoney0(base.cumValue) + ' 元；把衰减归零得到 ' + fmtMoney0(sNoDecay.cumValue) +
+        ' 元（+' + fmtMoney0(sNoDecay.cumValue - base.cumValue) + '，' + fmtPct(base.cumValue > 0 ? sNoDecay.cumValue / base.cumValue - 1 : NaN, 1) +
+        '），把消失归零得到 ' + fmtMoney0(sNoFail.cumValue) + ' 元（+' + fmtMoney0(sNoFail.cumValue - base.cumValue) + '），两个都归零是 ' +
+        fmtMoney0(sNeither.cumValue) + ' 元。'
+    });
+
+    out.push({
+      t: '等效年费与「摊到次数上的单次成本」是两个口径',
+      d: '实付 ' + fmtMoney0(P) + ' 摊到卡面 ' + cfg.cardYears + ' 年是 ' + fmtMoneyAdaptive(sim.cardAnnual) + '/年；摊到「卡还有效的年数」' +
+        sim.usedYears + ' 年是 ' + fmtMoneyAdaptive(sim.equivalentAnnual) + '/年；摊到累计期望 ' + fmtTimes(sim.cumVisits, 1) + ' 次上是 ' +
+        fmtMoneyAdaptive(res.laws.costPerVisit) + '/次（不用卡时是 ' + fmtMoney(A) + '/次）。三个数都算对，但回答的不是同一个问题。'
+        + '（终身卡的「卡还有效的年数」就是你选的观察年数，所以前两个口径会相同——多年卡与储值卡才会分开。）'
+    });
+
+    return out;
+  }
+
+  /* ── 结构自检（每次重算都跑） ──────────────────────────── */
+  function verify(res) {
+    const cfg = res.cfg, sim = res.sim, rows = res.rows;
+    const out = [];
+    const chk = function (name, pass, detail) { out.push({ name: name, pass: !!pass, detail: detail }); };
+    const A = cfg.perUsePrice, P = cfg.cardPrice;
+    const f0 = cfg.visitsPerMonth * 12;
+    const d = cfg.decayPerYear / 100, m = cfg.failurePerYear / 100, T = cfg.horizonYears;
+    const tol = 1e-6;
+    let rel2 = 0;
+
+    /* 1. 逐年含义：第 0 年存活 1、到访 = f0 */
+    chk('第 1 年存活概率为 1、到访次数等于每月次数 × 12',
+      Math.abs(rows[0].survive - 1) < tol && Math.abs(rows[0].visits - f0) < tol,
+      'S₀=' + r6(rows[0].survive) + '，n₀=' + r4(rows[0].visits));
+
+    /* 2. 逐年递推：S_t = S_{t-1}·(1−m)、n_t = n_{t-1}·(1−d) */
+    let recOk = true, bad = '';
+    for (let i = 1; i < rows.length; i++) {
+      const es = Math.abs(rows[i].survive - rows[i - 1].survive * (1 - m));
+      const en = Math.abs(rows[i].visits - rows[i - 1].visits * (1 - d));
+      if (!(es < 1e-12 && en < 1e-9)) { recOk = false; bad = '第 ' + (i + 1) + ' 年'; break; }
+    }
+    chk('存活与到访都按年等比递推', recOk, recOk ? '全部 ' + rows.length + ' 年通过' : bad + '不满足');
+
+    /* 3. 不折现、不衰减、不消失时的闭式：累计 = 每年次数 × 单次价 × 有效年数
+     *    （只对非储值卡成立；储值卡被面值封顶，闭式是另一条，见自检 5b） */
+    if (cfg.payType !== 'stored') {
+      const c2 = Object.assign({}, cfg, { decayPerYear: 0, failurePerYear: 0, discountRate: 0 });
+      const s2 = simulate(c2);
+      const eff = Math.min(T, cfg.payType === 'multiyear' ? cfg.cardYears : T);
+      const want = f0 * A * eff;
+      chk('衰减与消失都归零时，累计折扣 = 每年次数 × 单次价 × 有效年数',
+        Math.abs(s2.cumValue - want) < 1e-6 * Math.max(1, want),
+        '实算 ' + r4(s2.cumValue) + '，闭式 ' + r4(want) + '（每年 ' + r4(f0) + ' 次 × ' + r4(A) + ' 元 × ' + eff + ' 年）');
+    } else {
+      const c2 = Object.assign({}, cfg, { decayPerYear: 0, failurePerYear: 0, discountRate: 0 });
+      const s2 = simulate(c2);
+      /* 不衰减不消失时，累计折扣 = 面值被用完的折价：min(f0·A·T, 面值) × (实付÷面值) */
+      const want = Math.min(f0 * A * T, cfg.cardFace) * (cfg.cardPrice / cfg.cardFace);
+      if (s2.balanceLeft <= EPS) {
+        rel2 = Math.abs(s2.cumValue - want) / Math.max(1, want);
+        chk('储值卡面值在观察期内用完时，累计折扣 = 面值 × 折扣率',
+          rel2 < 1e-9,
+          '实算 ' + r8(s2.cumValue) + '，闭式 ' + r8(want) + '（面值 ' + r4(cfg.cardFace) + ' × ' + r6(cfg.cardPrice / cfg.cardFace) + '），相对差 ' + rel2.toExponential(2));
+      } else {
+        const cap = cfg.cardFace * (cfg.cardPrice / cfg.cardFace);   // = 卡价，只是写清来源
+        chk('储值卡面值在观察期内没用完时，折扣严格小于硬上限「面值 × 折扣率」',
+          s2.cumValue < cap - 1e-9,
+          '实算 ' + r8(s2.cumValue) + ' < 上限 ' + r8(cap) + '，期末余额 ' + r4(s2.balanceLeft) +
+          '（未用完时折扣 = 兑现面值 × 折扣率 = ' + r8(want) + '）');
+      }
+    }
+
+    /* 4. 等比级数闭式：Σ_{t=0..T-1} f0·q^t = f0·(1−q^T)/(1−q)，q=(1−d)(1−m)
+     *    sim.cumVisits 可能被（多年卡的）卡面年限截断，所以用「若不截断」的理论上限对拍；
+     *    这里刻意用第二套写法（Math.pow 求和 vs log1p/expm1 闭式）互相印证。 */
+    {
+      const q = (1 - d) * (1 - m);
+      /* sim.cumDecayVisits 只累计「卡还有效」的年（多年卡会被卡面年限截断），闭式同样截断 */
+      const eff = Math.min(T, cfg.payType === 'multiyear' ? cfg.cardYears : T);
+      let closed = 0;
+      for (let t = 0; t < eff; t++) closed += f0 * Math.pow(q, t);   // q = (1−d)(1−m)：只衰减+存活
+      const rel = Math.abs(sim.cumDecayVisits - closed) / Math.max(1e-12, Math.abs(closed));
+      chk('理论到访上限与等比级数逐项求和一致（两种写法互证）',
+        rel < 1e-9 || Math.abs(sim.cumDecayVisits - closed) < 1e-6,
+        '实算 ' + r6(sim.cumDecayVisits) + '，逐项求和 ' + r6(closed) + '（有效 ' + eff + ' 年），相对差 ' + rel.toExponential(2));
+      const stable = xSafeClosed(f0, d, m, eff);
+      chk('等比闭式的 log1p/expm1 写法与逐项求和一致（数值稳定）',
+        Math.abs(stable - closed) < 1e-6 * Math.max(1, Math.abs(closed)),
+        'log1p 写法 ' + r6(stable) + ' vs 逐项 ' + r6(closed));
+    }
+
+    /* 5. 累计折扣 = 有效年内的累计到访 × 单次价（非储值卡；多年卡按卡面年限截断） */
+    if (cfg.payType !== 'stored') {
+      const effRows = rows.filter(function (r) { return !r.expired; });
+      const effVisits = effRows.reduce(function (a, r) { return a + r.expectedVisits; }, 0);
+      const want = effVisits * A;
+      chk('累计折扣金额 = 有效年内的累计期望到访次数 × 单次价',
+        Math.abs(sim.cumValue - want) < 1e-6 * Math.max(1, want),
+        '实算 ' + r4(sim.cumValue) + '，应为 ' + r4(want) + '（有效 ' + effRows.length + ' 年，累计 ' + r4(effVisits) + ' 次）');
+    } else {
+      /* 储值卡：消费额 + 期末余额 = 面值（不多不少） */
+      const spent = sim.rows.reduce(function (a, r) { return a + r.spent; }, 0);
+      const sum = spent + sim.balanceLeft;
+      chk('储值卡：累计按面值消费 + 期末余额 = 到手面值',
+        Math.abs(sum - cfg.cardFace) < 1e-6 * Math.max(1, cfg.cardFace),
+        '消费 ' + r4(spent) + ' + 余额 ' + r4(sim.balanceLeft) + ' = ' + r4(sum) + '，面值 ' + r4(cfg.cardFace));
+    }
+
+    /* 6. 现值 ≤ 不折现值（r ≥ 0 时逐年缩小） */
+    chk('折现后的累计折扣不超过不折现口径',
+      sim.cumValuePV <= sim.cumValue + 1e-6,
+      'PV ' + r4(sim.cumValuePV) + ' ≤ ' + r4(sim.cumValue));
+
+    /* 7. 折现率归零时两口径相等 */
+    {
+      const s3 = simulate(Object.assign({}, cfg, { discountRate: 0 }));
+      chk('折现率归零时，现值口径与不折现口径相等',
+        Math.abs(s3.cumValuePV - s3.cumValue) < 1e-6 * Math.max(1, s3.cumValue),
+        'PV ' + r4(s3.cumValuePV) + ' vs ' + r4(s3.cumValue));
+    }
+
+    /* 8. 回本次数恒等式：累计折扣达到 P 时的次数就是 P ÷ A */
+    {
+      const need = P / A;
+      const valueAtNeed = need * A;
+      chk('回本所需次数 = 一次实付 ÷ 单次价（与衰减/消失无关）',
+        Math.abs(valueAtNeed - P) < 1e-9 * Math.max(1, P),
+        'P/A = ' + r6(need) + ' 次，对应金额 ' + r4(valueAtNeed));
+    }
+
+    /* 9. 盈亏平衡点回代：把频率换成 f* 后累计折扣应等于 P（误差在二分明辨率内） */
+    {
+      const b = sim.breakevenPerMonth;
+      if (b !== null && isFinite(b)) {
+        const c = Object.assign({}, cfg, { visitsPerMonth: b });
+        const s4 = simulate(c);
+        const rel = Math.abs(s4.cumValue - P) / Math.max(1, P);
+        chk('盈亏平衡频率回代后累计折扣 = 一次实付',
+          rel < 1e-6 || b >= VISITS_PER_MONTH_MAX - 1e-9,
+          'f* = ' + r6(b) + ' 次/月 → 累计 ' + r4(s4.cumValue) + '，目标 ' + r4(P) + '，相对差 ' + rel.toExponential(2));
+      } else {
+        chk('盈亏平衡频率：判定为「不可能」时确实连上限都够不到',
+          simulate(Object.assign({}, cfg, { visitsPerMonth: VISITS_PER_MONTH_MAX })).cumValue < P,
+          '每月 ' + VISITS_PER_MONTH_MAX + ' 次也只能累计 ' +
+          r4(simulate(Object.assign({}, cfg, { visitsPerMonth: VISITS_PER_MONTH_MAX })).cumValue) + ' < ' + r4(P));
+      }
+    }
+
+    /* 10. 单调性：次数增加，累计折扣不减 */
+    {
+      let ok = true, bad2 = '';
+      const picks = [0, 0.5, 1, 2, 4, 8, 16, 30];
+      let prev = -Infinity;
+      picks.forEach(function (k) {
+        const s5 = simulate(Object.assign({}, cfg, { visitsPerMonth: k }));
+        if (s5.cumValue + 1e-9 < prev) { ok = false; bad2 = 'f=' + k; }
+        prev = s5.cumValue;
+      });
+      chk('到访次数增加时累计折扣单调不减', ok, ok ? '8 档全部单调' : bad2 + ' 处倒退');
+    }
+
+    /* 11. 单调性：衰减率越高，累计折扣越低
+     *     ——例外：储值卡。面值总额是固定的稀缺资源，去得少反而能把它兑现得更慢、更充分，
+     *     所以「衰减 ↑ 累计折扣 ↑」在储值卡上是真实现象（随机测试抓到过），
+     *     对储值卡改断言「不会超过 面值 × 折扣率」这个硬上限。 */
+    if (cfg.payType === 'stored') {
+      let ok = true, prev = -Infinity, detail = '';
+      [0, 5, 10, 20, 40, 80].forEach(function (dv) {
+        const s6 = simulate(Object.assign({}, cfg, { decayPerYear: dv }));
+        if (s6.cumValue < prev - 1e-9) { /* 允许下降，不算失败 */ }
+        if (s6.cumValue > cfg.cardFace * s6.discountRateOnFace + 1e-6) ok = false;
+        detail += dv + '%:' + r2(s6.cumValue) + ' ';
+        prev = s6.cumValue;
+      });
+      chk('储值卡的累计折扣始终不超过 面值 × 折扣率（硬上限）', ok, detail);
+    } else {
+      let ok = true;
+      let prev = Infinity;
+      [0, 5, 10, 20, 40, 80].forEach(function (dv) {
+        const s6 = simulate(Object.assign({}, cfg, { decayPerYear: dv }));
+        if (s6.cumValue > prev + 1e-9) ok = false;
+        prev = s6.cumValue;
+      });
+      chk('衰减率越高累计折扣越低（单调）', ok, ok ? '6 档递减' : '出现非单调');
+    }
+
+    /* 12. 单调性：消失概率越高，累计折扣越低 */
+    {
+      let ok = true, prev = Infinity;
+      [0, 2, 5, 10, 30, 60].forEach(function (mv) {
+        const s7 = simulate(Object.assign({}, cfg, { failurePerYear: mv }));
+        if (s7.cumValue > prev + 1e-9) ok = false;
+        prev = s7.cumValue;
+      });
+      chk('消失概率越高累计折扣越低（单调）', ok, ok ? '6 档递减' : '出现非单调');
+    }
+
+    /* 13. 单调性：折现率越高，现值越低 */
+    {
+      let ok = true, prev = Infinity;
+      [0, 2, 4, 8, 20].forEach(function (rv) {
+        const s8 = simulate(Object.assign({}, cfg, { discountRate: rv }));
+        if (s8.cumValuePV > prev + 1e-9) ok = false;
+        prev = s8.cumValuePV;
+      });
+      chk('折现率越高现值越低（单调）', ok, ok ? '5 档递减' : '出现非单调');
+    }
+
+    /* 14. 多年卡：卡面年限之后不再产生折扣 */
+    if (cfg.payType === 'multiyear') {
+      const after = rows.filter(function (r) { return r.t >= cfg.cardYears; });
+      chk('多年卡在卡面年限之后不再产生折扣',
+        after.every(function (r) { return r.valueGross === 0; }),
+        '卡面 ' + cfg.cardYears + ' 年，向前看 ' + cfg.horizonYears + ' 年，越界年数 ' + after.length);
+    } else {
+      chk('非多年卡不受卡面年限截断', rows.every(function (r) { return !r.expired; }), '终身/储值卡不设到期');
+    }
+
+    /* 15. 储值卡：赠送关系与折扣率 */
+    if (cfg.payType === 'stored') {
+      const bonusOk = Math.abs(sim.bonus - (cfg.cardFace - P)) < 1e-9;
+      const drOk = Math.abs(sim.discountRateOnFace - P / cfg.cardFace) < 1e-12;
+      chk('储值卡赠送额 = 面值 − 实付，折扣率 = 实付 ÷ 面值',
+        bonusOk && drOk, '赠送 ' + r4(sim.bonus) + '，折扣率 ' + r6(sim.discountRateOnFace));
+    } else {
+      chk('非储值卡没有赠送额', sim.bonus === 0, 'bonus = ' + sim.bonus);
+    }
+
+    /* 16. 结构完整性：无 NaN / Infinity（允许明确表示为 null 的「不可能」） */
+    {
+      let badKeys = [];
+      const walk = function (o, path) {
+        if (o === null || o === undefined) return;
+        if (typeof o === 'number') {
+          if (Number.isNaN(o) || !isFinite(o)) badKeys.push(path + '=' + o);
+          return;
+        }
+        if (Array.isArray(o)) { o.forEach(function (v, i) { walk(v, path + '[' + i + ']'); }); return; }
+        if (typeof o === 'object') { Object.keys(o).forEach(function (k) { walk(o[k], path + '.' + k); }); }
+      };
+      walk({ rows: rows, sim: { cumVisits: sim.cumVisits, cumValue: sim.cumValue, cumValuePV: sim.cumValuePV, net: sim.net, netPV: sim.netPV, equivalentAnnual: sim.equivalentAnnual, cardAnnual: sim.cardAnnual, bonus: sim.bonus, discountRateOnFace: sim.discountRateOnFace, balanceLeft: sim.balanceLeft, faceLeftRatio: sim.faceLeftRatio } }, 'r');
+      chk('结果结构里没有 NaN / Infinity', badKeys.length === 0, badKeys.length ? badKeys.slice(0, 4).join('; ') : '递归检查通过');
+    }
+
+    /* 17. 逐年累计与终值一致 */
+    {
+      const last = rows[rows.length - 1];
+      chk('逐年累计的末值与汇总值一致',
+        Math.abs(last.cumValue - sim.cumValue) < 1e-9 * Math.max(1, sim.cumValue) &&
+        Math.abs(last.cumValuePV - sim.cumValuePV) < 1e-9 * Math.max(1, sim.cumValuePV),
+        '末值 ' + r4(last.cumValue) + ' / 汇总 ' + r4(sim.cumValue));
+    }
+
+    /* 18. 净值口径一致：净现值 = 累计现值 − 实付 */
+    chk('净现值 = 累计现值 − 一次实付',
+      Math.abs(sim.netPV - (sim.cumValuePV - P)) < 1e-9 * Math.max(1, P),
+      'netPV ' + r4(sim.netPV) + ' = ' + r4(sim.cumValuePV) + ' − ' + r4(P));
+
+    /* 19. 等效年费口径：按卡面年限摊 = P ÷ 卡面年限 */
+    chk('卡面年费 = 实付 ÷ 卡面年限',
+      Math.abs(sim.cardAnnual - P / Math.max(1, cfg.cardYears)) < 1e-9 * Math.max(1, P),
+      'cardAnnual ' + r4(sim.cardAnnual));
+
+    /* 20. 判定与「两种付法的现值之差」一致 */
+    {
+      const v = verdictOf(sim);
+      const consistent = (sim.savingPV < 0) ? (v.id === 'loss') : (v.id === 'win' || v.id === 'flat');
+      chk('判定分档与「买卡省下的现值」一致', consistent,
+        '判定「' + v.label + '」，省下现值 ' + r4(sim.savingPV) + '（按次付 ' + r4(sim.costNoCard) + ' vs 买卡 ' + r4(sim.costWithCard) + '）');
+    }
+
+    /* 21. 两种付法之差的恒等式（结论就是从这里来的，必须逐项对上） */
+    {
+      chk('省下的现值 = 按次付现值 − 买卡现值',
+        Math.abs(sim.savingPV - (sim.costNoCard - sim.costWithCard)) < 1e-9 * Math.max(1, Math.abs(sim.savingPV)),
+        '省下 ' + r4(sim.savingPV) + ' = ' + r4(sim.costNoCard) + ' − ' + r4(sim.costWithCard));
+      chk('买卡现值 = 卡价 + 自付部分现值',
+        Math.abs(sim.costWithCard - (P + sim.selfPayPV)) < 1e-9 * Math.max(1, Math.abs(sim.costWithCard)),
+        '买卡 ' + r4(sim.costWithCard) + ' = 卡价 ' + r4(P) + ' + 自付现值 ' + r4(sim.selfPayPV));
+      /* 分解恒等式：名义支出 = 用面值抵掉的部分 + 自己补的部分（不折现口径，直接可核） */
+      chk('名义支出 = 面值抵扣 + 自己补的部分（不折现）',
+        Math.abs(sim.cumNotional - (sim.cumFaceRedeemed + sim.cumSelfPay)) < 1e-6 * Math.max(1, sim.cumNotional),
+        r4(sim.cumNotional) + ' = 抵扣 ' + r4(sim.cumFaceRedeemed) + ' + 自付 ' + r4(sim.cumSelfPay));
+      /* 两个口径可以不同号：卡价在第 0 年就付出去，折扣是后面逐年才兑现，
+       * 折现会把「后面才拿到的好处」打折，所以不折现看着划算、折现后不划算是完全正常的
+       * （本轮随机测试就抓到一组：未折现 +138.01 元 vs 现值 −1,173.20 元）。
+       * 这里只断言一件必须成立的事：折现率越高，省下的现值只会更小（不会变大）。 */
+      const hi = withPatch(cfg, { discountRate: Math.min(RATE_MAX, cfg.discountRate + 10) });
+      chk('折现率提高后，省下的现值不会变大',
+        hi.sim.savingPV <= sim.savingPV + 1e-9,
+        '折现率 ' + cfg.discountRate + '% 时省下 ' + r4(sim.savingPV) + '，提到 ' + hi.cfg.discountRate + '% 时 ' + r4(hi.sim.savingPV));
+      chk('未折现口径与现值口径都如实给出（两者可以不同号）',
+        isFinite(sim.savingUndisc) && isFinite(sim.savingPV),
+        '未折现省下 ' + r4(sim.savingUndisc) + '，现值省下 ' + r4(sim.savingPV) +
+        ((sim.savingUndisc >= 0) !== (sim.savingPV >= 0) ? '（两口径方向不同，已如实分别展示）' : ''));
+      if (cfg.payType === 'stored') {
+        /* 储值卡「用面值换来的折扣」永远不超过 面值 × (实付÷面值) = 实付；
+         * 而且只有在「店一直开着」的那条路径上才拿得满，所以是严格上限而非等值。 */
+        chk('储值卡用面值换来的折扣不超过「面值 × 折扣率」（严格上限）',
+          sim.cumValue <= cfg.cardFace * sim.discountRateOnFace + 1e-9,
+          '折扣价值 ' + r4(sim.cumValue) + ' ≤ 上限 ' + r4(cfg.cardFace * sim.discountRateOnFace) +
+          (sim.balanceLeft > 0 ? '（期末仍余面值 ' + r4(sim.balanceLeft) + '）' : '（面值已用尽）'));
+      }
+    }
+
+    return out;
+  }
+
+  /* ── 导出用的固定边界清单（UI 与导出共用） ─────────────── */
+  const LIMITS = [
+    '本页算的是钱，不是「值不值」：它不评价你的使用习惯好不好，也不给消费建议；同一组假设换一个「向前看几年」就会换一个结论。',
+    '年到访衰减率、年消失概率、年折现率都由你自填，是假设不是事实：本页不联网、不查任何行业倒闭率、不预测任何具体商家的经营状况。',
+    '按整年分段：一年的到访次数按「每月次数 × 12」折算，不建模淡旺季、节假日与月度波动；也不处理月卡、季卡等短周期卡。',
+    '储值卡按「每次消费 = 单次价」扣面值，不处理店内定价变化、不可用商品、找零与转让；「用不完的余额」只显示金额，不判断能不能退。',
+    '不处理卡面条款：不给「能不能退卡 / 能不能转让 / 过期作废是否合法」的判断，也不读任何合同或会员协议。',
+    '不处理共享卡、家庭卡、多人合用一张卡、卡与卡叠加优惠、积分与优惠券；也不处理分期付款与手续费。',
+    '不做税务与发票处理；不换算汇率与外币卡。',
+    '不判断任何具体商家、平台或卡产品是否可靠，不引用也不替代任何监管规定与消费者权益条款。',
+    '默认样例与 8 个内置场景、页面上所有数字都是虚构示例，不是任何真实商家或用户的实测数据。'
+  ];
+
+  /* ── 场景 ─────────────────────────────────────────────── */
+  const scenarios = [
+    { id: 'base', name: '默认：终身卡 3,600 元 / 单次 75 元 / 每月 6 次', patch: {} },
+    {
+      id: 'gym', name: '健身年卡：2,400 元用 2 年 / 单次 50 元 / 每月 6 次',
+      patch: { payType: 'multiyear', cardPrice: '2400', cardFace: '2400', cardYears: '2', visitsPerMonth: '6', decayPerYear: '15', perUsePrice: '50', horizonYears: '6', discountRate: '4', failurePerYear: '8' }
+    },
+    {
+      id: 'stored', name: '洗车储值卡：充 1,000 得 1,200 / 单次 40 元 / 每月 1.5 次',
+      patch: { payType: 'stored', cardPrice: '1000', cardFace: '1200', visitsPerMonth: '1.5', decayPerYear: '5', perUsePrice: '40', horizonYears: '5', discountRate: '3', failurePerYear: '6' }
+    },
+    {
+      id: 'nouse', name: '办了就后悔：3,680 元 2 年卡，一年只去 3 次',
+      patch: { payType: 'multiyear', cardPrice: '3680', cardFace: '3680', cardYears: '2', visitsPerMonth: '0.25', decayPerYear: '30', perUsePrice: '60', horizonYears: '4', discountRate: '4', failurePerYear: '5' }
+    },
+    {
+      id: 'risky', name: '高风险储值：充 5,000 得 6,500 / 单次 120 元 / 年消失 15%',
+      patch: { payType: 'stored', cardPrice: '5000', cardFace: '6500', visitsPerMonth: '3', decayPerYear: '10', perUsePrice: '120', horizonYears: '6', discountRate: '4', failurePerYear: '15' }
+    },
+    {
+      id: 'storedwin', name: '储值划算：充 800 得 1,000 / 单次 20 元 / 每月 6 次',
+      patch: { payType: 'stored', cardPrice: '800', cardFace: '1000', visitsPerMonth: '6', decayPerYear: '5', perUsePrice: '20', horizonYears: '3', discountRate: '4', failurePerYear: '5' }
+    },
+    {
+      id: 'churn', name: '三分钟热度：充 3,000 得 3,300，首年月 12 次但衰减 40%',
+      patch: { payType: 'stored', cardPrice: '3000', cardFace: '3300', visitsPerMonth: '12', decayPerYear: '40', perUsePrice: '30', horizonYears: '8', discountRate: '4', failurePerYear: '4' }
+    },
+    {
+      id: 'longrun', name: '长期主义：终身卡 9,800 / 单次 80 元 / 月 4 次不衰减 / 看 20 年',
+      patch: { payType: 'lifetime', cardPrice: '9800', cardFace: '9800', cardYears: '1', visitsPerMonth: '4', decayPerYear: '0', perUsePrice: '80', horizonYears: '20', discountRate: '4', failurePerYear: '1' }
+    }
+  ];
+
+  const api = {
+    MAX_YEARS: MAX_YEARS, MAX_ITEMS: MAX_ITEMS, NAME_MAX: NAME_MAX,
+    MONEY_MIN: MONEY_MIN, MONEY_MAX: MONEY_MAX,
+    PRICE_PER_USE_MIN: PRICE_PER_USE_MIN, PRICE_PER_USE_MAX: PRICE_PER_USE_MAX,
+    VISITS_PER_MONTH_MIN: VISITS_PER_MONTH_MIN, VISITS_PER_MONTH_MAX: VISITS_PER_MONTH_MAX,
+    RATE_MIN: RATE_MIN, RATE_MAX: RATE_MAX, YEARS_MIN: YEARS_MIN, YEARS_MAX: YEARS_MAX,
+    PAY_TYPES: PAY_TYPES, FIELDS: FIELDS,
+    defaults: defaults, defaultsClone: defaultsClone, scenarios: scenarios, LIMITS: LIMITS,
+    parseNum: parseNum, num: num,
+    validateOne: validateOne, normInput: normInput, normItem: normItem,
+    simulate: simulate, monteCarlo: monteCarlo, expectedCappedConsumption: expectedCappedConsumption, poissonPmf: poissonPmf, lgamma: lgamma, analyze: analyze, verify: verify, verdictOf: verdictOf,
+    sensitivity: sensitivity, lawsOf: lawsOf,
+    fmtMoney: fmtMoney, fmtMoney0: fmtMoney0, fmtMoneyAdaptive: fmtMoneyAdaptive, fmtPct: fmtPct, fmtTimes: fmtTimes, fmtYears: fmtYears,
+    r2: r2, r4: r4, r6: r6
+  };
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.AppCore = api;
+})(typeof window !== 'undefined' ? window : null);
+</script>
+<script>/* 长期卡对账台 · 界面（lifetime-ledger）
+ * 依赖 window.AppCore（core.js）。所有展示数字都来自同一次 analyze() 的结果。
+ */
+(function () {
+  'use strict';
+  const C = window.AppCore;
+  const $ = (id) => document.getElementById(id);
+  const STORE_KEY = 'lifetime-ledger:v1';
+
+  const state = { res: null, checks: [], errors: [], warnings: [], sel: 0, exportCount: 0, renders: 0 };
+
+  /* ── 格式化 ───────────────────────────────────────── */
+  const M2 = (x) => C.fmtMoney(x);              // 金额，两位
+  const M0 = (x) => C.fmtMoney0(x);             // 金额，整数
+  /* 三档自适应：>= 1000 取整；>= 0.01 两位小数；再小就给有效数字，
+     避免「< 0.01」这种看不出量级的显示（极限测试档实测出现过） */
+  const M1 = (x) => C.fmtMoneyAdaptive(x);
+  const P2 = (x) => C.fmtPct(x, 2);
+  const T2 = (x) => C.fmtTimes(x, 2);
+  const YR = (x) => C.fmtYears(x);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const PILL = { win: 'ok', flat: 'tight', loss: 'fail' };
+  const pillHTML = (v) => '<span class="pill ' + (PILL[v.id] || 'tight') + '">' + esc(v.label) + '</span>';
+  const TYPE_NAME = { lifetime: '终身 / 买断', multiyear: '多年卡', stored: '储值卡' };
+
+  function toast(msg) {
+    let t = $('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      t.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:#161b22;color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;z-index:99;opacity:0;transition:opacity .18s';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._h);
+    t._h = setTimeout(function () { t.style.opacity = '0'; }, 1900);
+  }
+
+  /* ── 表单 ─────────────────────────────────────────── */
+  function fillSelects() {
+    $('payType').innerHTML = C.PAY_TYPES.map(function (t) {
+      return '<option value="' + t.id + '">' + esc(t.name) + '</option>';
+    }).join('');
+    $('scenario').innerHTML = '<option value="">（选择场景）</option>' + C.scenarios.map(function (s) {
+      return '<option value="' + s.id + '">' + esc(s.name) + '</option>';
+    }).join('');
+  }
+
+  function readInput() {
+    return {
+      payType: $('payType').value,
+      cardPrice: $('cardPrice').value,
+      cardFace: $('cardFace').value,
+      cardYears: $('cardYears').value,
+      visitsPerMonth: $('visitsPerMonth').value,
+      decayPerYear: $('decayPerYear').value,
+      perUsePrice: $('perUsePrice').value,
+      horizonYears: $('horizonYears').value,
+      discountRate: $('discountRate').value,
+      failurePerYear: $('failurePerYear').value
+    };
+  }
+
+  function writeInput(inp) {
+    const d = C.defaults();
+    const keys = ['payType', 'cardPrice', 'cardFace', 'cardYears', 'visitsPerMonth', 'decayPerYear', 'perUsePrice', 'horizonYears', 'discountRate', 'failurePerYear'];
+    keys.forEach(function (k) {
+      if (!$(k)) return;
+      const v = inp && inp[k] !== undefined && inp[k] !== null ? inp[k] : d[k];
+      $(k).value = String(v);
+    });
+    if (inp && Array.isArray(inp.items)) state.items = inp.items; else state.items = null;
+    toggleCond();
+  }
+
+  function toggleCond() {
+    const t = $('payType').value;
+    $('wrapFace').classList.toggle('hidden', t !== 'stored');
+    $('wrapYears').classList.toggle('hidden', t !== 'multiyear');
+    const hint = C.PAY_TYPES.filter(function (x) { return x.id === t; })[0];
+    $('payTypeHint').textContent = hint ? hint.hint : '';
+    const p = C.parseNum($('cardPrice').value);
+    const f = C.parseNum($('cardFace').value);
+    if (t === 'stored' && isFinite(p) && isFinite(f)) {
+      if (f < p) $('priceHint').textContent = '到手面值比实付还小 —— 这不成立，请检查（赠送只能是正的）。';
+      else if (f > p) $('priceHint').textContent = '赠送 ' + M2(f - p) + ' 元，相当于按面值消费时 ' + P2(1 - p / f) + ' 的折扣。';
+      else $('priceHint').textContent = '面值 = 实付，没有赠送：这张卡只是「先交钱」，后面按面值消费。';
+    } else if (t === 'multiyear') {
+      const y = C.parseNum($('cardYears').value);
+      $('priceHint').textContent = isFinite(p) && isFinite(y) && y > 0
+        ? '摊到卡面年限上是 ' + M2(p / y) + ' 元/年（这是「卡面年费」口径，不考虑你去不去）。' : '';
+    } else if (t === 'lifetime') {
+      $('priceHint').textContent = isFinite(p) ? '终身卡没有到期日：实付 ' + M2(p) + ' 元一次性付清，之后每次不再单独掏钱。' : '';
+    } else {
+      $('priceHint').textContent = '';
+    }
+  }
+
+  function markBad(errors) {
+    Array.prototype.forEach.call(document.querySelectorAll('input.bad, select.bad'), function (el) { el.classList.remove('bad'); });
+    const shown = [];
+    errors.forEach(function (e) {
+      const id = String(e.field || '').replace(/^\./, '');
+      if (id && $(id)) { $(id).classList.add('bad'); }
+      shown.push(e.msg);
+    });
+    $('errors').innerHTML = shown.length
+      ? '<div class="errbox"><b>先修好这些再算：</b><ul class="tight">' + shown.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>'
+      : '';
+    return shown;
+  }
+
+  /* ── 计算与渲染 ───────────────────────────────────── */
+  function compute() {
+    const raw = readInput();
+    if (state.items) raw.items = state.items;
+    const res = C.analyze(raw);
+    state.renders++;
+    if (!res.ok) {
+      state.res = null;
+      markBad(res.errors);
+      ['headline', 'kpis', 'compare', 'yearBody', 'laws', 'insights', 'cardBody', 'detailBody', 'sensBody', 'steps', 'checks', 'warnBox'].forEach(function (id) {
+        if ($(id)) $(id).innerHTML = '';
+      });
+      $('verdictTag').textContent = '输入未通过校验';
+      $('checkTag').textContent = '';
+      $('detailName').textContent = '';
+      $('sensOf').textContent = '';
+      return res;
+    }
+    markBad([]);
+    state.res = res;
+    state.checks = res.checks;
+    render(res);
+    return res;
+  }
+
+  function render(res) {
+    const s = res.sim;
+    $('verdictTag').innerHTML = pillHTML(res.verdict);
+
+    /* 结论 */
+    const saved = s.savingPV;
+    const head = [];
+    head.push('按你填的这组假设：<b>买卡' + (saved > 0 ? '划算' : (Math.abs(saved) < 0.005 ? '基本打平' : '不划算')) + '</b>——' +
+      '全程按次付要花 <b>' + M2(s.costNoCard) + '</b> 元（现值），买卡是 <b>' + M2(s.costWithCard) + '</b> 元（现值），差 <b' +
+      (saved > 0 ? ' class="vd"' : ' class="vf"') + '>' + (saved > 0 ? '省 ' : '多花 ') + M2(Math.abs(saved)) + '</b> 元。');
+    if (s.breakevenPerMonth === null || !isFinite(s.breakevenPerMonth)) {
+      head.push('哪怕每月去 ' + C.VISITS_PER_MONTH_MAX + ' 次（每年 ' + M0(C.VISITS_PER_MONTH_MAX * 12) + ' 次），折扣累计也追不上卡价。');
+    } else {
+      head.push('盈亏平衡在第 1 年每月 <b>' + T2(s.breakevenPerMonth) + ' 次</b>（你填的是每月 ' + T2(res.cfg.visitsPerMonth) + ' 次）。');
+    }
+    if (s.paybackYears === Infinity) head.push('按这组假设<b>永远回不了本</b>。');
+    else head.push('折扣累计追平卡价在第 <b>' + YR(s.paybackYears) + '</b> 年（共需 ' + T2(s.visitsToPayback) + ' 次到访）。');
+    $('headline').innerHTML = head.join(' ');
+
+    /* KPI */
+    const kpi = [
+      ['卡价 ÷ 单次价', T2(s.visitsToPayback) + ' 次', '就是「折扣累计追平卡价」要去的次数'],
+      ['盈亏平衡频率', s.breakevenPerMonth === null ? '—' : (isFinite(s.breakevenPerMonth) ? T2(s.breakevenPerMonth) + ' 次/月' : '做不到'), '每月第 1 年至少去这么多次才划算'],
+      ['卡面年费', M2(s.cardAnnual) + '/年', '实付 ÷ 卡面年限，不考虑你去不去'],
+      ['摊到次数上的成本', M2(res.laws.costPerVisit) + '/次', '实付 ÷ 累计期望到访 ' + T2(s.cumVisits) + ' 次；按次付是 ' + M2(res.cfg.perUsePrice) + '/次']
+    ];
+    $('kpis').innerHTML = kpi.map(function (k) {
+      return '<div class="kpi"><div class="k">' + esc(k[0]) + '</div><div class="v">' + esc(k[1]) + '</div><div class="s">' + esc(k[2]) + '</div></div>';
+    }).join('');
+
+    /* 提醒 */
+    const warn = [];
+    if (res.isStored && res.laws.bonusRate > 1) warn.push('到手面值是实付的 ' + C.fmtTimes(res.cfg.cardFace / res.cfg.cardPrice, 1) + ' 倍 —— 赠送率超过 100% 在现实里基本不存在，这组数只用来试边界。');
+    if (res.cfg.failurePerYear >= 10) warn.push('你填的年消失概率是 ' + P2(res.cfg.failurePerYear / 100) + ' —— 这已经很高：' + M2(s.costNoCard - s.costWithCard) + ' 元的「省下」里有很大一块取决于店还开着。');
+    if (res.isStored && s.balanceLeft > 0) warn.push('按这组假设，期末还剩 <b>' + M2(s.balanceLeft) + '</b> 元面值没用完（占面值 ' + P2(s.faceLeftRatio) + '）——这是先垫出去、还没换成服务的钱。');
+    if (res.cfg.payType === 'multiyear' && s.expireYear) warn.push('卡面年限只有 ' + res.cfg.cardYears + ' 年：第 ' + s.expireYear + ' 年起这张卡不再产生折扣，而你要看 ' + res.cfg.horizonYears + ' 年。');
+    if (res.cfg.decayPerYear >= 30) warn.push('年到访衰减率 ' + P2(res.cfg.decayPerYear / 100) + ' 意味着第 5 年的到访只剩第 1 年的 ' + P2(Math.pow(1 - res.cfg.decayPerYear / 100, 4)) + ' ——衰减是这类卡最常见的亏损来源。');
+    $('warnBox').innerHTML = warn.length ? '<div class="warnbox">' + warn.join('<br>') + '</div>' : '';
+
+    renderCompare(res);
+    renderYears(res);
+    renderLaws(res);
+    renderInsights(res);
+    renderCards(res);
+    renderDetail(res);
+    renderSens(res);
+    renderSteps(res);
+    renderLimits();
+    renderChecks(res);
+  }
+
+  /* 两种付法对账 */
+  function renderCompare(res) {
+    const s = res.sim, cfg = res.cfg;
+    const rows = [
+      ['一次实付（第 1 年就掏出去）', M2(cfg.cardPrice), '在第 0 年折现，就是它本身'],
+      ['卡面能抵掉的按次价', M2(s.cumFaceRedeemed), '按面值抵扣的名义金额（不折现；已按「店还开着」的概率打折）'],
+      ['抵扣不够时自己补的部分', M2(s.cumSelfPay), '余额用完 / 卡到期之后，还是要按单次价付'],
+      ['<b>买卡这条路：合计现值</b>', '<b>' + M2(s.costWithCard) + '</b>', '= 一次实付 + 自付部分的现值 ' + M2(s.selfPayPV)],
+      ['<b>全程按次付：合计现值</b>', '<b>' + M2(s.costNoCard) + '</b>', '同一份到访，一次都不买卡，按单次价付到底'],
+      ['<b>差（正 = 买卡更省）</b>', '<b class="' + (s.savingPV > 0 ? 'vd' : 'vf') + '">' + (s.savingPV > 0 ? '省 ' : '多花 ') + M2(Math.abs(s.savingPV)) + '</b>', '= 按次付现值 − 买卡现值，结论就取这个数']
+    ];
+    $('compare').innerHTML = '<div class="tw"><table class="wrap" style="width:100%"><tbody>' + rows.map(function (r) {
+      return '<tr><td style="width:46%">' + r[0] + '</td><td style="width:18%;font-weight:600">' + r[1] + '</td><td style="width:36%;white-space:normal;color:var(--ink3);font-size:12px">' + esc(r[2]) + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+      '<p class="footnote">不折现的粗口径也一并给出，方便和直觉对照：不折现时按次付 ' + M2(s.costNoCardUndisc) + ' 元、买卡 ' + M2(cfg.cardPrice + s.cumSelfPay) + ' 元，差 ' +
+      M2(s.savingUndisc) + ' 元。' + ((s.savingUndisc >= 0) !== (s.savingPV >= 0)
+        ? '<b>两个口径方向不同</b>：钱是先掏的、好处是后面逐年才拿到的，所以折现之后可能就不划算了 —— 这本身就是结论的一部分。' : '') + '</p>';
+  }
+
+  /* 逐年一本账 */
+  function renderYears(res) {
+    const s = res.sim;
+    $('yearBody').innerHTML = res.rows.map(function (r) {
+      const vd = r.net >= 0 ? 'vd' : 'vf';
+      return '<tr>' +
+        '<td>第 ' + r.year + ' 年' + (r.expired ? ' <span class="muted">（卡已到期）</span>' : '') + '</td>' +
+        '<td>' + P2(r.survive) + '</td>' +
+        '<td>' + T2(r.visits) + '</td>' +
+        '<td>' + T2(r.expectedVisits) + '</td>' +
+        '<td>' + M2(r.valueGross) + '</td>' +
+        '<td>' + M2(r.cumValue) + '</td>' +
+        '<td>' + M2(r.cumValuePV) + '</td>' +
+        '<td class="' + vd + '">' + M2(r.net) + '</td>' +
+        '<td>' + (r.balanceLeft === null ? '—' : M0(r.balanceLeft)) + '</td>' +
+        '</tr>';
+    }).join('') +
+      '<tr class="sum"><td>合计</td><td>—</td><td>—</td><td>' + T2(s.cumVisits) + '</td>' +
+      '<td>' + M2(s.cumValue) + '</td><td>' + M2(s.cumValue) + '</td><td>' + M2(s.cumValuePV) + '</td>' +
+      '<td class="' + (s.net >= 0 ? 'vd' : 'vf') + '">' + M2(s.net) + '</td><td>—</td></tr>';
+  }
+
+  /* 口径对照 */
+  function renderLaws(res) {
+    const s = res.sim, cfg = res.cfg, L = res.laws;
+    const items = [
+      ['「店还开着」的概率是逐年连乘的',
+        '第 t 年还开着的概率 = (1 − ' + P2(cfg.failurePerYear / 100) + ')^t，所以第 ' + cfg.horizonYears + ' 年是 ' + P2(res.rows[res.rows.length - 1].survive) +
+        '。本页用的有效年数之和是 <b>' + T2(s.cumDecayVisits / (cfg.visitsPerMonth * 12)) + '</b> 年（= Σ 存活概率），而不是「店平均能活几年」——这两个数不一样。'],
+      ['回本需要的次数与衰减、消失、折现都无关',
+        '回本只看「累计折扣」追上「一次实付」：需要 <b>' + T2(s.visitsToPayback) + '</b> 次（' + M0(cfg.cardPrice) + ' ÷ ' + M2(cfg.perUsePrice) + '）。但「多久能凑够这些次数」完全取决于衰减与消失。'],
+      ['等效年费有三个口径，回答的不是同一个问题',
+        '摊到卡面 ' + cfg.cardYears + ' 年：<b>' + M1(L.eqByFace) + '/年</b>；摊到「卡还有效的年数」' + s.usedYears + ' 年：<b>' + M1(L.eqByUsed) + '/年</b>；摊到累计期望 ' + T2(s.cumVisits) + ' 次上：<b>' + M1(L.costPerVisit) + '/次</b>。'],
+      ['这套假设下这张卡的「折扣价值」是 ' + M2(s.cumValue) + ' 元',
+        '= 累计期望到访 ' + T2(s.cumVisits) + ' 次 × ' + M2(cfg.perUsePrice) + ' 元' + (res.isStored ? '（储值卡封顶到面值，实际兑现 ' + M2(s.cumFaceRedeemed) + ' 元面值 × 折扣率 ' + C.fmtPct(Math.max(0, s.discountRateOnFace), 4) + '）' : '') + '。']
+    ];
+    if (res.isStored) {
+      items.push(['储值卡先看赠送，再看用不用得完',
+        '实付 ' + M0(cfg.cardPrice) + ' 拿到面值 ' + M0(cfg.cardFace) + '，赠送 <b>' + M2(s.bonus) + '</b>（+' + P2(L.bonusRate) + '），按面值消费相当于 ' + P2(1 - s.discountRateOnFace) + ' 的折扣。' +
+        (s.exhaustYear ? '按这组频率第 <b>' + s.exhaustYear + '</b> 年用尽（含当年零头）。' : '按这组频率 ' + cfg.horizonYears + ' 年内用不完，期末还余 ' + M2(s.balanceLeft) + ' 元面值。')]);
+    }
+    $('laws').innerHTML = '<div class="grid3">' + items.map(function (x) {
+      return '<div class="metric"><div class="mk" style="font-weight:700;color:var(--ink)">' + esc(x[0]) + '</div><div class="ms" style="font-size:12.5px;line-height:1.6;margin-top:4px">' + x[1] + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  /* 要点（核心生成的同一次结果） */
+  function renderInsights(res) {
+    $('insights').innerHTML = res.insights.map(function (x) {
+      return '<div class="slice"><span class="st">' + esc(x.t) + '</span>' + x.d + '</div>';
+    }).join('');
+  }
+
+  /* 卡清单 */
+  function renderCards(res) {
+    if (!res.items || !res.items.length) {
+      $('cardBody').innerHTML = '<tr><td colspan="11" class="muted">这份输入里没有卡清单。</td></tr>';
+      $('detailName').textContent = '';
+      $('detailBody').innerHTML = '';
+      return;
+    }
+    if (state.sel >= res.items.length) state.sel = 0;
+    $('cardBody').innerHTML = res.items.map(function (it, i) {
+      if (!it.ok) {
+        return '<tr><td>' + esc(it.name) + '</td><td colspan="10" class="vf">这张卡的输入有错：' +
+          esc(it.errors.map(function (e) { return e.msg; }).join('；')) + '</td></tr>';
+      }
+      const sim = it.sim;
+      return '<tr class="pick' + (i === state.sel ? ' sel' : '') + '" data-i="' + i + '">' +
+        '<td>' + esc(it.name) + '</td>' +
+        '<td>' + esc(TYPE_NAME[it.cfg.payType] || it.cfg.payType) + '</td>' +
+        '<td>' + M2(it.cfg.cardPrice) + '</td>' +
+        '<td>' + M2(it.cfg.cardFace) + '</td>' +
+        '<td>' + T2(it.cfg.visitsPerMonth) + '</td>' +
+        '<td>' + M2(it.cfg.perUsePrice) + '</td>' +
+        '<td>' + M2(sim.costNoCard) + '</td>' +
+        '<td>' + M2(sim.costWithCard) + '</td>' +
+        '<td class="' + (sim.savingPV >= 0 ? 'vd' : 'vf') + '">' + M2(sim.savingPV) + '</td>' +
+        '<td>' + (sim.breakevenPerMonth === null ? '—' : (isFinite(sim.breakevenPerMonth) ? T2(sim.breakevenPerMonth) + '/月' : '做不到')) + '</td>' +
+        '<td>' + pillHTML(it.verdict) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  /* 选中卡详解 */
+  function renderDetail(res) {
+    if (!res.items || !res.items.length) return;
+    const it = res.items[state.sel];
+    if (!it || !it.ok) { $('detailName').textContent = ''; $('detailBody').innerHTML = ''; return; }
+    $('detailName').textContent = it.name;
+    const s = it.sim, c = it.cfg;
+    const rows = [
+      ['类型', TYPE_NAME[c.payType] || c.payType],
+      ['一次实付 / 到手面值', M2(c.cardPrice) + ' / ' + M2(c.cardFace) + (c.payType === 'stored' && s.bonus > 0 ? '（赠送 ' + M2(s.bonus) + '）' : '')],
+      ['卡面年限 / 向前看', c.cardYears + ' 年 / ' + c.horizonYears + ' 年' + (s.expireYear ? '（第 ' + s.expireYear + ' 年起卡失效）' : '')],
+      ['每月次数 / 年到访衰减 / 年消失', T2(c.visitsPerMonth) + ' 次 / ' + P2(c.decayPerYear / 100) + ' / ' + P2(c.failurePerYear / 100)],
+      ['单次价 / 年折现率', M2(c.perUsePrice) + ' / ' + P2(c.discountRate / 100)],
+      ['累计期望到访', T2(s.cumVisits) + ' 次'],
+      ['折扣价值（不折现）', M2(s.cumValue)],
+      ['按次付现值 / 买卡现值', M2(s.costNoCard) + ' / ' + M2(s.costWithCard)],
+      ['省下现值', '<b class="' + (s.savingPV >= 0 ? 'vd' : 'vf') + '">' + M2(s.savingPV) + '</b>'],
+      ['回本所需次数 / 回本年份', T2(s.visitsToPayback) + ' 次 / ' + YR(s.paybackYears) + ' 年'],
+      ['盈亏平衡频率', s.breakevenPerMonth === null ? '—' : (isFinite(s.breakevenPerMonth) ? T2(s.breakevenPerMonth) + ' 次/月' : '即使天天去也做不到')],
+      ['卡面年费 / 有效期年数', M1(s.cardAnnual) + '/年 / ' + s.usedYears + ' 年'],
+      ['等效年费（摊到有效期）', M1(s.equivalentAnnual) + '/年'],
+      ['实付摊到次数上', M1(C.lawsOf(c, s).costPerVisit) + '/次（按次付是 ' + M2(c.perUsePrice) + '/次）'],
+      ['判定', pillHTML(it.verdict) + ' <span class="muted">（省下现值 ' + M2(s.savingPV) + '，卡价的 25% 是分档线）</span>']
+    ];
+    if (c.payType === 'stored') {
+      rows.push(['面值用尽 / 期末余额', (s.exhaustYear ? '第 ' + s.exhaustYear + ' 年用尽（含当年零头）' : '观察期内没用完') + ' / ' + M2(s.balanceLeft) + '（占面值 ' + P2(s.faceLeftRatio) + '）']);
+      const lawsIt = C.lawsOf(c, s);
+      rows.push(['赠送率 / 按面值折扣', P2(lawsIt.bonusRate) + ' / ' + P2(1 - s.discountRateOnFace)]);
+    }
+    /* 选中卡的自检：清单条目本身不带 checks，这里按需为这一张单独跑一遍结构自检 */
+    const itChecks = C.verify({ cfg: c, sim: s, rows: s.rows });
+    const itPass = itChecks.filter(function (x) { return x.pass; }).length;
+    $('detailBody').innerHTML = '<div class="tw"><table class="wrap" style="width:100%"><tbody>' + rows.map(function (r) {
+      return '<tr><td style="width:40%">' + esc(r[0]) + '</td><td style="white-space:normal">' + r[1] + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+      '<p class="footnote">这张卡的自检：' + itPass + '/' + itChecks.length + ' 通过' +
+      (itPass < itChecks.length ? '（<span class="vf">有未通过项：' +
+        esc(itChecks.filter(function (x) { return !x.pass; }).map(function (x) { return x.name; }).join('；')) + '</span>）' : '') + '。</p>';
+  }
+
+  /* 敏感性 */
+  function renderSens(res) {
+    $('sensOf').textContent = '对主卡（不是清单）';
+    $('sensBody').innerHTML = res.sens.map(function (r) {
+      const d = r.deltaPV;
+      const cls = Math.abs(d) < 0.005 ? '' : (d > 0 ? 'vd' : 'vf');
+      return '<tr>' +
+        '<td>' + esc(r.label) + '</td>' +
+        '<td>' + M2(r.cumValue) + '</td>' +
+        '<td>' + M2(r.costNoCard) + '</td>' +
+        '<td>' + M2(r.costWithCard) + '</td>' +
+        '<td>' + M2(r.savingPV) + '</td>' +
+        '<td class="' + cls + '">' + (Math.abs(d) < 0.005 ? '0.00' : (d > 0 ? '+' : '−') + M2(Math.abs(d))) + '</td>' +
+        '<td>' + (r.breakevenPerMonth === null ? '—' : (isFinite(r.breakevenPerMonth) ? T2(r.breakevenPerMonth) + '/月' : '做不到')) + '</td>' +
+        '<td>' + pillHTML(r.verdict) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function renderSteps(res) {
+    const s = res.sim, cfg = res.cfg, out = [];
+    if (s.savingPV < 0) {
+      out.push('按这组假设<b>别买</b>：全程按次付比买卡省 ' + M2(-s.savingPV) + ' 元（现值）。要买的话，第 1 年每月至少要 ' +
+        (isFinite(s.breakevenPerMonth) ? T2(s.breakevenPerMonth) + ' 次' : '做不到') + '。');
+    } else {
+      out.push('按这组假设<b>可以买</b>：比全程按次付省 ' + M2(s.savingPV) + ' 元（现值）。');
+    }
+    if (isFinite(s.breakevenPerMonth) && cfg.visitsPerMonth < s.breakevenPerMonth) {
+      out.push('你填的频率差平衡点 ' + T2(s.breakevenPerMonth - cfg.visitsPerMonth) + ' 次/月 —— 回到上面的「第 1 年每月去几次」把它调到 ' + T2(s.breakevenPerMonth) + ' 次，看结论会不会翻。');
+    }
+    if (res.isStored && s.balanceLeft > 0) {
+      out.push('期末还剩 ' + M2(s.balanceLeft) + ' 元面值没用完。把「年到访衰减率」调低或「向前看几年」调长，看这块钱能不能被用掉。');
+    }
+    if (cfg.payType === 'multiyear' && s.expireYear && cfg.horizonYears > cfg.cardYears) {
+      out.push('卡面 ' + cfg.cardYears + ' 年、你要看 ' + cfg.horizonYears + ' 年：第 ' + s.expireYear + ' 年之后的到访要按单次价另算，那段已经在「买卡现值」里的自付部分计过了。');
+    }
+    if (cfg.failurePerYear > 0) {
+      out.push('把「店 / 商家年消失概率」改成 0（当作永远不会没）再算一次，两次的差额就是你为「它可能会没」付的价钱：' +
+        M2(res.sens.filter(function (x) { return x.label.indexOf('消失概率归零') >= 0; })[0].deltaPV) + ' 元。');
+    }
+    out.push('把「年折现率」改成 0，能看出「不折现」口径下的结论 —— 两个口径方向不同时，说明结论对「先掏钱」这件事很敏感。');
+    out.push('这四个假设里，最值得你自己去确认的是<b>到访频率</b>与<b>年到访衰减率</b>：前者有记录可查（付款记录、打卡记录），后者只能自己估。');
+    $('steps').innerHTML = out.map(function (t) { return '<li>' + t + '</li>'; }).join('');
+  }
+
+  function renderLimits() {
+    $('limits').innerHTML = C.LIMITS.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+  }
+
+  function renderChecks(res) {
+    const pass = res.checks.filter(function (c) { return c.pass; }).length;
+    $('checkTag').textContent = pass + ' / ' + res.checks.length + ' 通过';
+    $('checks').innerHTML = res.checks.map(function (c) {
+      return '<li>' + (c.pass ? '<span class="vd">✔</span> ' : '<span class="vf">✘</span> ') + esc(c.name) +
+        ' <span class="muted">— ' + esc(c.detail) + '</span></li>';
+    }).join('');
+  }
+
+  /* ── 导出 ─────────────────────────────────────────── */
+  function download(name, text, type) {
+    const blob = new Blob([text], { type: type || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+    state.exportCount++;
+  }
+
+  function csvText() {
+    const res = state.res; if (!res) return '';
+    const s = res.sim, cfg = res.cfg;
+    const cell = function (x) { const t = String(x); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const L = [];
+    L.push(['长期卡对账台', '导出时间', new Date().toISOString()].map(cell).join(','));
+    L.push(['说明', '默认样例与内置场景均为虚构示例；所有数字来自同一次 analyze()'].map(cell).join(','));
+    L.push('');
+    L.push(['输入', '值'].map(cell).join(','));
+    [['卡的类型', TYPE_NAME[cfg.payType]], ['一次实付（元）', cfg.cardPrice], ['到手面值（元）', cfg.cardFace],
+      ['卡面年限（年）', cfg.cardYears], ['第 1 年每月次数', cfg.visitsPerMonth], ['年到访衰减率（%）', cfg.decayPerYear],
+      ['不用卡单次价（元）', cfg.perUsePrice], ['向前看几年', cfg.horizonYears], ['年折现率（%）', cfg.discountRate],
+      ['店年消失概率（%）', cfg.failurePerYear]].forEach(function (r) { L.push([r[0], r[1]].map(cell).join(',')); });
+    L.push('');
+    L.push(['结果', '值'].map(cell).join(','));
+    [['判定', res.verdict.label], ['省下现值（元）', s.savingPV], ['全程按次付现值（元）', s.costNoCard], ['买卡现值（元）', s.costWithCard],
+      ['一次实付（元）', cfg.cardPrice], ['自付部分现值（元）', s.selfPayPV], ['卡面抵扣的按次价（元）', s.cumFaceRedeemed],
+      ['累计期望到访（次）', s.cumVisits], ['折扣价值（元）', s.cumValue], ['折扣价值现值（元）', s.cumValuePV],
+      ['回本所需次数', s.visitsToPayback], ['回本年份', s.paybackYears], ['盈亏平衡频率（次/月）', s.breakevenPerMonth],
+      ['卡面年费（元/年）', s.cardAnnual], ['摊到次数（元/次）', res.laws.costPerVisit],
+      ['期末余额（元）', s.balanceLeft], ['用尽年份', s.exhaustYear]].forEach(function (r) { L.push([r[0], r[1]].map(cell).join(',')); });
+    L.push('');
+    L.push(['逐年', '店还开着', '这一年去几次', '期望到访', '当年折扣', '累计折扣', '累计现值', '累计净值', '余额'].map(cell).join(','));
+    res.rows.forEach(function (r) {
+      L.push([r.year, r.survive, r.visits, r.expectedVisits, r.valueGross, r.cumValue, r.cumValuePV, r.net,
+        r.balanceLeft === null ? '' : r.balanceLeft].map(cell).join(','));
+    });
+    L.push('');
+    L.push(['结构自检', '结果', '细节'].map(cell).join(','));
+    res.checks.forEach(function (c) { L.push([c.name, c.pass ? 'PASS' : 'FAIL', c.detail].map(cell).join(',')); });
+    if (res.items && res.items.length) {
+      L.push('');
+      L.push(['卡清单', '类型', '实付', '面值', '每月次数', '单次价', '按次付现值', '买卡现值', '省下现值', '平衡频率', '判定'].map(cell).join(','));
+      res.items.forEach(function (it) {
+        if (!it.ok) { L.push([it.name, '输入有误'].map(cell).join(',')); return; }
+        L.push([it.name, TYPE_NAME[it.cfg.payType], it.cfg.cardPrice, it.cfg.cardFace, it.cfg.visitsPerMonth, it.cfg.perUsePrice,
+          it.sim.costNoCard, it.sim.costWithCard, it.sim.savingPV, it.sim.breakevenPerMonth, it.verdict.label].map(cell).join(','));
+      });
+    }
+    return '\ufeff' + L.join('\n');
+  }
+
+  function mdText() {
+    const res = state.res; if (!res) return '';
+    const s = res.sim, cfg = res.cfg, L = [];
+    L.push('# 长期卡对账台 · 结果');
+    L.push('');
+    L.push('- 导出时间：' + new Date().toISOString());
+    L.push('- 说明：默认样例与内置场景均为虚构示例；所有数字来自同一次 `analyze()`');
+    L.push('');
+    L.push('## 结论');
+    L.push('');
+    L.push('**' + res.verdict.label + '**：全程按次付现值 ' + M2(s.costNoCard) + ' 元 vs 买卡现值 ' + M2(s.costWithCard) + ' 元，差 ' + M2(s.savingPV) + ' 元（正 = 买卡更省）。');
+    L.push('');
+    L.push('| 指标 | 值 |');
+    L.push('|---|---|');
+    [['一次实付', M2(cfg.cardPrice)], ['到手面值', M2(cfg.cardFace)], ['卡面年限', cfg.cardYears + ' 年'],
+      ['第 1 年每月次数', T2(cfg.visitsPerMonth)], ['年到访衰减率', P2(cfg.decayPerYear / 100)], ['不用卡单次价', M2(cfg.perUsePrice)],
+      ['向前看', cfg.horizonYears + ' 年'], ['年折现率', P2(cfg.discountRate / 100)], ['店年消失概率', P2(cfg.failurePerYear / 100)],
+      ['累计期望到访', T2(s.cumVisits) + ' 次'], ['折扣价值（不折现）', M2(s.cumValue)], ['折扣价值现值', M2(s.cumValuePV)],
+      ['回本所需次数', T2(s.visitsToPayback) + ' 次'], ['回本年份', YR(s.paybackYears) + ' 年'],
+      ['盈亏平衡频率', (s.breakevenPerMonth === null ? '—' : T2(s.breakevenPerMonth) + ' 次/月')],
+      ['卡面年费', M1(s.cardAnnual) + '/年'], ['卡还有效的年数', s.usedYears + ' 年'],
+      ['等效年费（摊到有效期）', M1(s.equivalentAnnual) + '/年'],
+      ['实付摊到次数上', M1(res.laws.costPerVisit) + '/次'],
+      ['期末余额', M2(s.balanceLeft)], ['用尽年份', s.exhaustYear === null ? '—' : '第 ' + s.exhaustYear + ' 年']].forEach(function (r) {
+      L.push('| ' + r[0] + ' | ' + r[1] + ' |');
+    });
+    L.push('');
+    L.push('## 逐年一本账');
+    L.push('');
+    L.push('| 第几年 | 店还开着 | 这一年去几次 | 期望到访 | 当年折扣 | 累计折扣 | 累计现值 | 累计净值 | 余额 |');
+    L.push('|---|---|---|---|---|---|---|---|---|');
+    res.rows.forEach(function (r) {
+      L.push('| 第 ' + r.year + ' 年 | ' + P2(r.survive) + ' | ' + T2(r.visits) + ' | ' + T2(r.expectedVisits) + ' | ' +
+        M2(r.valueGross) + ' | ' + M2(r.cumValue) + ' | ' + M2(r.cumValuePV) + ' | ' + M2(r.net) + ' | ' +
+        (r.balanceLeft === null ? '—' : M0(r.balanceLeft)) + ' |');
+    });
+    L.push('');
+    L.push('## 要点');
+    L.push('');
+    res.insights.forEach(function (x) { L.push('- **' + x.t + '** ' + x.d); });
+    L.push('');
+    L.push('## 卡清单');
+    L.push('');
+    if (res.items && res.items.length) {
+      L.push('| 卡 | 类型 | 实付 | 面值 | 每月次数 | 单次价 | 按次付现值 | 买卡现值 | 省下现值 | 平衡频率 | 判定 |');
+      L.push('|---|---|---|---|---|---|---|---|---|---|---|');
+      res.items.forEach(function (it) {
+        if (!it.ok) { L.push('| ' + it.name + ' | 输入有误 | | | | | | | | | |'); return; }
+        L.push('| ' + it.name + ' | ' + TYPE_NAME[it.cfg.payType] + ' | ' + M2(it.cfg.cardPrice) + ' | ' + M2(it.cfg.cardFace) + ' | ' +
+          T2(it.cfg.visitsPerMonth) + ' | ' + M2(it.cfg.perUsePrice) + ' | ' + M2(it.sim.costNoCard) + ' | ' + M2(it.sim.costWithCard) + ' | ' +
+          M2(it.sim.savingPV) + ' | ' + (it.sim.breakevenPerMonth === null ? '—' : T2(it.sim.breakevenPerMonth) + '/月') + ' | ' + it.verdict.label + ' |');
+      });
+    } else {
+      L.push('（无）');
+    }
+    L.push('');
+    L.push('## 敏感性（每行都完整重算）');
+    L.push('');
+    L.push('| 改动 | 累计折扣 | 按次付现值 | 买卡现值 | 省下现值 | 变化 | 平衡频率 | 判定 |');
+    L.push('|---|---|---|---|---|---|---|---|');
+    res.sens.forEach(function (r) {
+      L.push('| ' + r.label + ' | ' + M2(r.cumValue) + ' | ' + M2(r.costNoCard) + ' | ' + M2(r.costWithCard) + ' | ' + M2(r.savingPV) + ' | ' +
+        M2(r.deltaPV) + ' | ' + (r.breakevenPerMonth === null ? '—' : T2(r.breakevenPerMonth) + '/月') + ' | ' + r.verdict.label + ' |');
+    });
+    L.push('');
+    L.push('## 结构自检');
+    L.push('');
+    res.checks.forEach(function (c) { L.push('- [' + (c.pass ? 'PASS' : 'FAIL') + '] ' + c.name + ' — ' + c.detail); });
+    L.push('');
+    L.push('## 这份账不算什么');
+    L.push('');
+    C.LIMITS.forEach(function (t) { L.push('- ' + t); });
+    return L.join('\n');
+  }
+
+  function jsonBackup() {
+    return JSON.stringify({
+      app: 'lifetime-ledger', version: 1, savedAt: new Date().toISOString(),
+      input: readInput(), items: state.items || undefined
+    }, null, 2);
+  }
+
+  /* ── 结果卡 PNG（1080×1350） ──────────────────────── */
+  function pngCard() {
+    const res = state.res; if (!res) { toast('先让输入通过校验'); return; }
+    const W = 1080, H = 1350;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const FONT = function (w2, sz) { return w2 + ' ' + sz + 'px "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif'; };
+    /* 空白必须作为独立 token 保留，否则整张卡的数字之间的空格会被静默吃掉 */
+    const toks = function (t) { return String(t).match(/[A-Za-z0-9.,%×÷+\-−/（）()]+|\s+|[\u4e00-\u9fa5]|[^\s]/g) || []; };
+    const wrap = function (text, maxW, size, weight) {
+      g.font = FONT(weight || 400, size);
+      const out = [];
+      let line = '';
+      toks(text).forEach(function (t) {
+        const t2 = line + t;
+        if (g.measureText(t2).width > maxW && line.trim()) {
+          out.push(line.replace(/\s+$/, ''));
+          line = t.replace(/^\s+/, '');
+        } else line = t2;
+      });
+      if (line.trim()) out.push(line.replace(/\s+$/, ''));
+      return out.map(function (x, i) { return (i > 0 && /^[）)；，。、%》]/.test(x)) ? '　' + x : x; });
+    };
+    const put = function (text, x, y, size, color, weight, maxW, lh) {
+      g.fillStyle = color; g.font = FONT(weight || 400, size);
+      const lines = maxW ? wrap(text, maxW, size, weight) : [String(text)];
+      lines.forEach(function (ln, i) { g.fillText(ln, x, y + i * (lh || size + 8)); });
+      return y + lines.length * (lh || size + 8);
+    };
+    const putFit = function (text, x, y, size, minSize, color, weight, maxW) {
+      let sz = size;
+      g.font = FONT(weight || 400, sz);
+      while (sz > minSize && g.measureText(String(text)).width > maxW) { sz -= 1; g.font = FONT(weight || 400, sz); }
+      g.fillStyle = color; g.font = FONT(weight || 400, sz);
+      g.fillText(String(text), x, y);
+    };
+
+    const s = res.sim, cfg = res.cfg;
+    g.fillStyle = '#f5f6f8'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#0f5fa6'; g.fillRect(0, 0, W, 12);
+    put('长期卡对账台', 72, 106, 50, '#161b22', 700);
+    put(TYPE_NAME[cfg.payType] + '：实付 ' + M0(cfg.cardPrice) + ' 元 / 单次 ' + M2(cfg.perUsePrice) + ' 元 / 每月 ' + T2(cfg.visitsPerMonth) + ' 次', 72, 150, 23, '#4a5568', 400, W - 144);
+
+    /* 结论 176–360 */
+    const win = s.savingPV > 0;
+    g.fillStyle = win ? '#e8f6ef' : '#fdeceb'; g.fillRect(72, 176, W - 144, 184);
+    put('按这组假设：' + res.verdict.label, 96, 222, 34, win ? '#0f7b52' : '#b42318', 700, W - 240);
+    put('全程按次付 ' + M2(s.costNoCard) + ' 元（现值）　vs　买卡 ' + M2(s.costWithCard) + ' 元（现值）', 96, 272, 25, '#161b22', 500, W - 240);
+    put((win ? '省 ' : '多花 ') + M2(Math.abs(s.savingPV)) + ' 元　·　盈亏平衡每月 ' +
+      (s.breakevenPerMonth === null ? '—' : (isFinite(s.breakevenPerMonth) ? T2(s.breakevenPerMonth) + ' 次' : '做不到')), 96, 320, 25, '#161b22', 700, W - 240);
+
+    /* KPI 380–500 */
+    const kpi = [
+      ['卡价 ÷ 单次价', T2(s.visitsToPayback) + ' 次'],
+      ['回本年份', YR(s.paybackYears) + ' 年'],
+      ['折扣价值（不折现）', M2(s.cumValue)],
+      ['摊到次数上的成本', M2(res.laws.costPerVisit) + '/次']
+    ];
+    kpi.forEach(function (x, i) {
+      const px = 72 + (i % 2) * 476, py = 380 + Math.floor(i / 2) * 122;
+      g.fillStyle = '#fff'; g.fillRect(px, py, 452, 114);
+      g.strokeStyle = '#e3e6eb'; g.strokeRect(px, py, 452, 114);
+      g.fillStyle = '#4a5568'; g.font = FONT(400, 22); g.fillText(x[0], px + 24, py + 38);
+      putFit(x[1], px + 24, py + 86, 34, 20, '#161b22', 700, 404);
+    });
+
+    /* 逐年 640–940 */
+    put('逐年：店还开着 × 到访衰减 × 折现', 72, 662, 28, '#161b22', 700, W - 144);
+    const cols = [72, 300, 470, 640, 810, 976];
+    g.fillStyle = '#7b8794'; g.font = FONT(400, 20);
+    ['第几年', '还开着', '去几次', '当年折扣', '累计折扣', '累计净值'].forEach(function (t, i) {
+      g.fillText(t, cols[i] - (i >= 4 ? 70 : 0), 698);
+    });
+    g.strokeStyle = '#e3e6eb'; g.beginPath(); g.moveTo(72, 710); g.lineTo(W - 72, 710); g.stroke();
+    let ry = 744;
+    const show = res.rows.length <= 6 ? res.rows : res.rows.slice(0, 5).concat([res.rows[res.rows.length - 1]]);
+    /* show 最多 6 行，ry 最多到 744 + 5×31 = 899，落在上面 boxTop（≥946）之上 */
+    show.forEach(function (r, i) {
+      g.font = FONT(400, 22); g.fillStyle = '#37424f';
+      g.fillText('第 ' + r.year + ' 年' + (i === 5 && res.rows.length > 6 ? '（末）' : ''), cols[0], ry);
+      g.fillText(P2(r.survive), cols[1], ry);
+      g.fillText(T2(r.visits), cols[2], ry);
+      g.fillText(M0(r.valueGross), cols[3], ry);
+      g.fillText(M0(r.cumValue), cols[4] - 70, ry);
+      g.fillStyle = r.net >= 0 ? '#0f7b52' : '#b42318';
+      g.fillText(M0(r.net), cols[5] - 70, ry);
+      ry += 31;
+    });
+
+    /* 要点与三种口径：按 put() 的真实行数往下排，避免文字长出底框与下一段叠字
+     * （第一版写死 950→1090 的框高，长句换行后直接压到「三种口径的牌价」上，目检抓到） */
+    const LINE = function (sz, lh) { return lh || sz + 8; };
+    const estLines = function (text, size, weight, maxW) { return wrap(text, maxW, size, weight).length; };
+    const bul1 = '回本需要的次数（' + T2(s.visitsToPayback) + ' 次）与衰减、消失、折现都无关';
+    const bul2 = '但「多久能凑够这些次数」完全取决于衰减与消失：本页按 Σ(1−' + P2(cfg.failurePerYear / 100) + ')^t 算出的有效年数之和是 ' +
+      T2(s.cumDecayVisits / (cfg.visitsPerMonth * 12)) + ' 年';
+    const bul3 = '三个口径都算对、回答的不是同一个问题：卡面年费 ' + M1(s.cardAnnual) + '/年、摊到有效期 ' + s.usedYears + ' 年是 ' +
+      M1(s.equivalentAnnual) + '/年、摊到次数是 ' + M1(res.laws.costPerVisit) + '/次';
+    const l1 = estLines(bul1, 23, 700, W - 240), l2 = estLines(bul2, 21, 400, W - 240), l3 = estLines(bul3, 21, 400, W - 240);
+    const inner = (l1 + l2 + l3) * 29 + 12;
+    const boxTop = Math.max(946, 1234 - 96 - inner - 40);       /* 给下面两段留出空间 */
+    g.fillStyle = '#eaf2fa'; g.fillRect(72, boxTop, W - 144, inner);
+    let by = boxTop + 34;
+    by = put(bul1, 96, by, 23, '#0f5fa6', 700, W - 240) + 2;
+    by = put(bul2, 96, by, 21, '#161b22', 400, W - 240) + 2;
+    put(bul3, 96, by, 21, '#161b22', 400, W - 240);
+
+    /* 三种口径的牌价 */
+    let cy = boxTop + inner + 40;
+    cy = put('三种口径的牌价', 72, cy, 26, '#161b22', 700, W - 144) + 4;
+    cy = put('卡面年费 ' + M1(s.cardAnnual) + '/年　·　按次付 ' + M2(cfg.perUsePrice) + '/次　·　这张卡摊到次数 ' + M1(res.laws.costPerVisit) + '/次',
+      72, cy, 22, '#37424f', 400, W - 144) + 2;
+    put('累计期望到访 ' + T2(s.cumVisits) + ' 次　·　折扣价值 ' + M2(s.cumValue) + ' 元　·　期末余额 ' + M2(s.balanceLeft) + ' 元',
+      72, cy, 22, '#37424f', 400, W - 144);
+
+    /* 页脚 */
+    g.fillStyle = '#e3e6eb'; g.fillRect(72, 1232, W - 144, 1);
+    put('年到访衰减 ' + P2(cfg.decayPerYear / 100) + ' / 年消失 ' + P2(cfg.failurePerYear / 100) + ' / 年折现 ' + P2(cfg.discountRate / 100) +
+      ' / 向前看 ' + cfg.horizonYears + ' 年 / 卡面 ' + cfg.cardYears + ' 年', 72, 1262, 20, '#7b8794', 400, W - 144);
+    put('衰减、消失、折现三个假设全部由用户自填，本页不联网、不查任何行业倒闭率、不预测任何商家', 72, 1290, 20, '#7b8794', 400, W - 144);
+    put('默认与场景都是虚构示例 · 不构成消费建议', 72, 1318, 20, '#7b8794', 400, W - 144);
+
+    cv.toBlob(function (b) {
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url; a.download = '长期卡对账台-结果卡.png'; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+      state.exportCount++;
+    }, 'image/png');
+  }
+
+  /* ── 本机保存 / 导入 ─────────────────────────────── */
+  function saveLocal() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ input: readInput(), items: state.items || null }));
+      $('saveState').textContent = '已保存到本机（' + new Date().toLocaleTimeString('zh-CN') + '）。只存在这个浏览器里。';
+      toast('已保存到本机');
+    } catch (e) { $('saveState').textContent = '这台浏览器不允许本机保存（可能是隐私模式）。'; }
+  }
+
+  function loadLocal(silent) {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) { if (!silent) toast('本机还没有保存过'); return false; }
+      const o = JSON.parse(raw);
+      state.items = o && o.items ? o.items : null;
+      writeInput(o && o.input ? o.input : o);
+      if (!silent) toast('已读取上次保存的输入');
+      return true;
+    } catch (e) { if (!silent) toast('本机保存的内容读不出来'); return false; }
+  }
+
+  function importBackup(file) {
+    const fr = new FileReader();
+    fr.onload = function () {
+      try {
+        const o = JSON.parse(String(fr.result));
+        if (o && o.app && o.app !== 'lifetime-ledger') throw new Error('不是本页的备份');
+        const inp = o && o.input ? o.input : o;
+        if (!inp || inp.cardPrice === undefined) throw new Error('结构不对');
+        state.items = o && Array.isArray(o.items) ? o.items : null;
+        writeInput(inp);
+        $('scenario').value = '';
+        compute();
+        toast('已导入备份' + (o && o.app ? '（' + o.app + '）' : ''));
+      } catch (e) { toast('这个备份文件读不出来'); }
+    };
+    fr.readAsText(file);
+  }
+
+  /* ── 事件绑定 ─────────────────────────────────────── */
+  function bind() {
+    const form = $('form');
+    form.addEventListener('input', function (e) {
+      if (e.target.matches('input[type=text]')) { toggleCond(); compute(); }
+    });
+    form.addEventListener('change', function (e) {
+      if (e.target.matches('select, input[type=checkbox]')) { toggleCond(); compute(); }
+    });
+    $('cardBody').addEventListener('click', function (e) {
+      const tr = e.target.closest ? e.target.closest('tr[data-i]') : null;
+      if (!tr) return;
+      state.sel = Number(tr.getAttribute('data-i'));
+      render(state.res);
+    });
+    $('btnReset').addEventListener('click', function () {
+      state.items = null;
+      writeInput(C.defaultsClone());
+      $('scenario').value = 'base';
+      compute(); toast('已恢复默认虚构示例');
+    });
+    $('btnSave').addEventListener('click', saveLocal);
+    $('btnLoad').addEventListener('click', function () { if (loadLocal(false)) { $('scenario').value = ''; compute(); } });
+    $('scenario').addEventListener('change', function (e) {
+      const id = e.target.value;
+      if (!id) return;
+      const sc = C.scenarios.filter(function (x) { return x.id === id; })[0];
+      if (!sc) return;
+      const d = C.defaultsClone();
+      Object.assign(d, sc.patch);
+      state.items = null;
+      writeInput(d); state.sel = 0; compute();
+      toast('已换上场景：' + String(sc.name).split(/[：/]/)[0].trim());
+    });
+    $('btnCsv').addEventListener('click', function () { if (!state.res) return toast('先让输入通过校验'); download('长期卡对账台.csv', csvText(), 'text/csv;charset=utf-8'); toast('CSV 已导出'); });
+    $('btnMd').addEventListener('click', function () { if (!state.res) return toast('先让输入通过校验'); download('长期卡对账台.md', mdText(), 'text/markdown;charset=utf-8'); toast('Markdown 已导出'); });
+    $('btnJson').addEventListener('click', function () { if (!state.res) return toast('先让输入通过校验'); download('长期卡对账台-备份.json', jsonBackup(), 'application/json'); toast('JSON 备份已导出'); });
+    $('btnPng').addEventListener('click', function () { if (!state.res) return toast('先让输入通过校验'); pngCard(); toast('结果卡 PNG 正在生成'); });
+    $('btnPrint').addEventListener('click', function () { window.print(); });
+    $('importFile').addEventListener('change', function (e) { if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]); });
+  }
+
+  function boot() {
+    fillSelects();
+    state.items = C.defaultsClone().items;
+    writeInput(C.defaultsClone());
+    $('scenario').value = 'base';
+    bind();
+    compute();
+    const saved = loadLocal(true);
+    if (saved) { $('scenario').value = ''; compute(); }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  /* 给验收脚本用的只读钩子（不改变页面行为） */
+  window.__ltc = {
+    state: state,
+    res: function () { return state.res; },
+    checks: function () { return state.checks; },
+    renderCount: function () { return state.renders; }
+  };
+})();
+</script>
+</body>
+</html>
